@@ -1,0 +1,8 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Apron
+Bundle-SymbolicName: de.hsu.grafcet.lib.apron
+Bundle-Version: 1.0.0
+Export-Package: apron
+Automatic-Module-Name: de.hsu.grafcet.lib.apron
+Bundle-RequiredExecutionEnvironment: JavaSE-17
