@@ -1,4 +1,4 @@
-package de.hsu.grafcet.staticAnalysis.analysis;
+package de.hsu.grafcet.staticAnalysis.abstInterpretation;
 
 import java.util.Arrays;
 import apron.*;

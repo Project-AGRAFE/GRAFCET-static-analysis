@@ -120,6 +120,11 @@ public class Subgraf implements ISubgraf{
 		return null;
 	}
 
+	/**
+	 * @deprecated --> Sollte durch Transformation und HierarchyOrder-Konzept erstellt werden und nicht hier aus dem Grafcet-Modell gelesen werden
+	 * @return
+	 */
+	
 	public Collection<? extends Statement> getActivationLinkVertices() {
 		Set<Vertex> activationLinkvertices = new LinkedHashSet<Vertex>();
 		for(InitializableType initType : this.getPartialGrafcet().getSteps()) {
@@ -128,6 +133,24 @@ public class Subgraf implements ISubgraf{
 			}
 		}
 		return activationLinkvertices;
+	}
+
+	public boolean isSequential() {
+		//multiple initial steps
+		if(this.getInitialVertices().size() > 1) {
+			return false;
+		}
+		//source transitions
+		if(!this.getSourceEdges().isEmpty()) {
+			return false;
+		}
+		//synchronizations
+		if(!this.getPartialGrafcet().getSynchronizations().isEmpty()) {
+			//TODO: kann genauer berechnet werden.
+			//Wenn Variablen nur in sequenziellen strängen vorkommen, kann analyse trotzdem angewendet werden.
+			return false;
+		}
+		return true;
 	}
 	
 

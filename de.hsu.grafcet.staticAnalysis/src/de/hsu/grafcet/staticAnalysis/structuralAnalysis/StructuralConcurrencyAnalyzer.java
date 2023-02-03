@@ -1,4 +1,4 @@
-package de.hsu.grafcet.staticAnalysis.analysis;
+package de.hsu.grafcet.staticAnalysis.structuralAnalysis;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -31,57 +31,13 @@ public class StructuralConcurrencyAnalyzer {
 		}
 		
 		Subgraf subgraf = dependency.getInferior();
-		LinkedHashSet<Vertex> initialReachableVertices = new LinkedHashSet<Vertex>();
 		
-		//set initial vertices:
-		switch (dependency.getType()) {
-		case initialStep: {
-			initialReachableVertices.addAll(subgraf.getInitialVertices());
-			break;
-		} case sourceTransition: {
-			//do nothing, sourceTranstitions will be considered anyways
-			break;
-		} case enclosed: {
-			for (Vertex vertex : subgraf.getVertices()) {
-				if (vertex.getStep() instanceof InitializableType) {
-					if (((InitializableType) vertex.getStep()).isActivationLink()) {
-						initialReachableVertices.add(vertex);
-					}
-				}
-			}
-			
-			break;
-		} case forced: {	
-			switch (((ForcingOrder)dependency.getSuperiorTriggerVertex()).getForcingOrderType()) {
-			case CURRENT_SITUATION: {
-				//abort analysis; analysis covered with one of the other possibilities
-				return "abort analysis; analysis covered with one of the other possibilities";
-			} case EMPTY_SITUATION: {
-				//no steps reachable; except sourceTransitions are set
-				break;
-			} case EXPLICIT_SITUATION: {
-				for (InitializableType step : ((ForcingOrder)dependency.getSuperiorTriggerVertex()).getForcedSteps()){
-					initialReachableVertices.add(dependency.getInferior().getVertexFromStep(step));
-				}
-				break;
-			} case INITIAL_SITUATION: {
-				initialReachableVertices.addAll(subgraf.getInitialVertices());
-				break;
-			}
-			default:
-				throw new IllegalArgumentException("Unexpected value: " + ((ForcingOrder)dependency.getSuperiorTriggerVertex()).getForcingOrderType());
-			}
-			break;
-		}
-		default: 
-			throw new IllegalArgumentException("Unexpected value: " + dependency.getType());
-		}
-		
+		//FIXME folgendes ist outdated! sollte an andere Stelle ausgelagert werden. Hier nur der Algorithmus selbst!
 		//Bedingugnen unter denen der Algorithmus potenziell nicht funktioniert:
 		//zwei sequenziell parallele Stränge gefolgt von Synchronisation würde zu unterapproximation führen
 		if (subgraf.getSourceEdges().size() > 2 || 
-				(!subgraf.getSourceEdges().isEmpty() && initialReachableVertices.size() > 2) ||
-				initialReachableVertices.size() > 4) {
+				(!subgraf.getSourceEdges().isEmpty() && dependency.getInitiallyActiveVertices().size() > 2) ||
+				dependency.getInitiallyActiveVertices().size() > 4) {
 			for (Vertex vertex : subgraf.getVertices()) {
 				dependency.addConcurrentVertices(vertex, subgraf.getVertices());
 			}
@@ -104,29 +60,26 @@ public class StructuralConcurrencyAnalyzer {
 			}
 		}
 		
-		
-		
-		
 		worklist.addAll(subgraf.getSourceEdges());
 		//Added //TODO test
 		for (Edge sourceEdge : subgraf.getSourceEdges()) {
 			//make downstream vertices of source transition concurrent to initial reachable steps
 			for (Vertex downstreamVertex : sourceEdge.getDownstream()) {
-				dependency.addConcurrentVertices(downstreamVertex, initialReachableVertices);
+				dependency.addConcurrentVertices(downstreamVertex, dependency.getInitiallyActiveVertices());
 			}
 			
 		}
-		for (Vertex vertex : initialReachableVertices) {	
+		for (Vertex vertex : dependency.getInitiallyActiveVertices()) {	
 			//make initial reachable vertices reachable
 			dependency.getReachableVertices().add(vertex);
 			//make initial reachable vertices concurrent
-			dependency.addConcurrentVertices(vertex, initialReachableVertices);
+			dependency.addConcurrentVertices(vertex, dependency.getInitiallyActiveVertices());
 			for (Edge sourceEdge : subgraf.getSourceEdges()) {
 				dependency.addConcurrentVertices(vertex, sourceEdge.getDownstream());
 			}
 		}
 		
-		for (Vertex vertex : initialReachableVertices) {
+		for (Vertex vertex : dependency.getInitiallyActiveVertices()) {
 			//add downstream transtions of initial reachable vertices to worklist
 			for (Edge downstreamEdge : subgraf.getDownstreamEdges(vertex)) {
 				if (isEnabled(downstreamEdge, subgraf.getSourceEdges(), dependency.getReachableVertices())){
@@ -139,7 +92,6 @@ public class StructuralConcurrencyAnalyzer {
 		reachabilityConcurrencyAlgorithm(worklist, dependency, analyzeConcurrentSteps);
 		return dependency.toString();
 	}
-	
 	
 	private static void reachabilityConcurrencyAlgorithm(CustomArrayDeque<Edge> worklist, HierarchyDependency dependency, boolean analyzeConcurrentSteps) {
 		Subgraf subgraf = dependency.getInferior();

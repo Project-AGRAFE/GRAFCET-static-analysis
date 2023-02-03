@@ -2,8 +2,11 @@ package de.hsu.grafcet.staticAnalysis.hierarchyOrder;
 
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 
+import de.hsu.grafcet.ForcingOrder;
+import de.hsu.grafcet.InitializableType;
 import de.hsu.grafcet.staticAnalysis.hypergraf.*;
 
 
@@ -20,12 +23,14 @@ public class HierarchyDependency{
 	 */
 
 	Vertex superiorTriggerVertex;	
-	LinkedHashSet<Vertex> reachableVertices = new LinkedHashSet<Vertex>();
-	LinkedHashSet<Vertex> liveVertices = new LinkedHashSet<Vertex>();
-	LinkedHashMap<Vertex, LinkedHashSet<Vertex>> concurrentVertices = new LinkedHashMap<Vertex, LinkedHashSet<Vertex>>();
+	Set<Vertex> reachableVertices = new LinkedHashSet<Vertex>();
+	Set<Vertex> liveVertices = new LinkedHashSet<Vertex>();
+	Map<Vertex, Set<Vertex>> concurrentVertices = new LinkedHashMap<Vertex, Set<Vertex>>();
 	ISubgraf superior;
 	Subgraf inferior;
 	InitializationType type;
+	Set<Vertex> initiallyActiveVertices = null;
+	
 	
 	public HierarchyDependency(Vertex superiorTriggerVertex,
 			ISubgraf superior, Subgraf inferior, InitializationType type) {
@@ -43,15 +48,15 @@ public class HierarchyDependency{
 		this.superiorTriggerVertex = superiorTriggerVertex;
 	}
 
-	public LinkedHashSet<Vertex> getReachableVertices() {
+	public Set<Vertex> getReachableVertices() {
 		return reachableVertices;
 	}
 
-	public void setReachableVertices(LinkedHashSet<Vertex> reachableVertices) {
+	public void setReachableVertices(Set<Vertex> reachableVertices) {
 		this.reachableVertices = reachableVertices;
 	}
 
-	public LinkedHashSet<Vertex> getLiveVertices() {
+	public Set<Vertex> getLiveVertices() {
 		return liveVertices;
 	}
 
@@ -59,11 +64,11 @@ public class HierarchyDependency{
 		this.liveVertices = liveVertices;
 	}
 
-	public LinkedHashMap<Vertex, LinkedHashSet<Vertex>> getConcurrentVertices() {
+	public Map<Vertex, Set<Vertex>> getConcurrentVertices() {
 		return concurrentVertices;
 	}
 
-	public void setConcurrentVertices(LinkedHashMap<Vertex, LinkedHashSet<Vertex>> concurrentVertices) {
+	public void setConcurrentVertices(Map<Vertex, Set<Vertex>> concurrentVertices) {
 		this.concurrentVertices = concurrentVertices;
 	}
 
@@ -89,6 +94,55 @@ public class HierarchyDependency{
 
 	public void setType(InitializationType type) {
 		this.type = type;
+	}
+	public Set<Vertex> getInitiallyActiveVertices() {
+		if(initiallyActiveVertices == null) {
+			setInitiallyActiveVertices();
+		}
+		return initiallyActiveVertices;
+	}
+	public void setInitiallyActiveVertices() {
+		switch (this.getType()) {
+		case initialStep: {
+			initiallyActiveVertices.addAll(this.inferior.getInitialVertices());
+			break;
+		} case sourceTransition: {
+			//do nothing, sourceTranstitions will be considered anyways
+			break;
+		} case enclosed: {
+			for (Vertex vertex : this.inferior.getVertices()) {
+				if (vertex.getStep() instanceof InitializableType) {
+					if (((InitializableType) vertex.getStep()).isActivationLink()) {
+						initiallyActiveVertices.add(vertex);
+					}
+				}
+			}
+			break;
+		} case forced: {	
+			switch (((ForcingOrder)this.getSuperiorTriggerVertex()).getForcingOrderType()) {
+			case CURRENT_SITUATION: {
+				//abort analysis; analysis covered with one of the other possibilities
+				break;
+			} case EMPTY_SITUATION: {
+				//no steps reachable; except sourceTransitions are set
+				break;
+			} case EXPLICIT_SITUATION: {
+				for (InitializableType step : ((ForcingOrder)this.getSuperiorTriggerVertex()).getForcedSteps()){
+					initiallyActiveVertices.add(this.getInferior().getVertexFromStep(step));
+				}
+				break;
+			} case INITIAL_SITUATION: {
+				initiallyActiveVertices.addAll(this.getInferior().getInitialVertices());
+				break;
+			}
+			default:
+				throw new IllegalArgumentException("Unexpected value: " + ((ForcingOrder)this.getSuperiorTriggerVertex()).getForcingOrderType());
+			}
+			break;
+		}
+		default: 
+			throw new IllegalArgumentException("Unexpected value: " + this.getType());
+		}
 	}
 
 	

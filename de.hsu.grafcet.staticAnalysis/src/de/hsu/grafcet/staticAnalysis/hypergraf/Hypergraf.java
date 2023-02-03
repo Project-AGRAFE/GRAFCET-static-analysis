@@ -61,20 +61,9 @@ public class Hypergraf implements ISubgraf {
 			return false;
 		}
 		for (Subgraf subgraf : this.getSubgrafs()) {
-			//multiple initial steps
-			if(subgraf.getInitialVertices().size() > 1) {
-				return false;
-			}
-			//source transitions
-			if(!subgraf.getSourceEdges().isEmpty()) {
-				return false;
-			}
-			//synchronizations
-			if(!subgraf.getPartialGrafcet().getSynchronizations().isEmpty()) {
-				//TODO: kann genauer berechnet werden.
-				//Wenn Variablen nur in sequenziellen strängen vorkommen, kann analyse trotzdem angewendet werden.
-				return false;
-			}
+				if (!subgraf.isSequential()) {
+					return false;
+				}
 		}
 		return true;
 	}

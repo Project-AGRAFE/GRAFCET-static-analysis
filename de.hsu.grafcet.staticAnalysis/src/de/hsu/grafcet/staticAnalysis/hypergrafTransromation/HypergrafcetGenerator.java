@@ -15,9 +15,8 @@ import org.eclipse.emf.ecore.util.EcoreUtil.Copier;
 
 import apron.*;
 import de.hsu.grafcet.staticAnalysis.hypergraf.*;
-import de.hsu.grafcet.staticAnalysis.analysis.AbstractInterpreter;
+import de.hsu.grafcet.staticAnalysis.abstInterpretation.*;
 import de.hsu.grafcet.staticAnalysis.hierarchyOrder.*;
-import de.hsu.grafcet.staticAnalysis.analysis.*;
 import de.hsu.grafcet.*;
 
 public class HypergrafcetGenerator {

@@ -31,12 +31,12 @@ import org.eclipse.ui.PlatformUI;
 
 import apron.ApronException;
 import de.hsu.grafcet.*;
-import de.hsu.grafcet.staticAnalysis.analysis.AbstractInterpreter;
-import de.hsu.grafcet.staticAnalysis.analysis.DeadlockDetecter;
-import de.hsu.grafcet.staticAnalysis.analysis.StructuralConcurrencyAnalyzer;
+import de.hsu.grafcet.staticAnalysis.abstInterpretation.SequAbstractInterpreter;
+import de.hsu.grafcet.staticAnalysis.abstInterpretation.DeadlockDetecter;
 import de.hsu.grafcet.staticAnalysis.hierarchyOrder.HierarchyDependency;
 import de.hsu.grafcet.staticAnalysis.hierarchyOrder.HierarchyOrder;
 import de.hsu.grafcet.staticAnalysis.hypergrafTransromation.HypergrafcetGenerator;
+import de.hsu.grafcet.staticAnalysis.structuralAnalysis.StructuralConcurrencyAnalyzer;
 
 public class RunAbstractInterpretation implements IObjectActionDelegate{
 
@@ -86,7 +86,7 @@ public class RunAbstractInterpretation implements IObjectActionDelegate{
 								Util.createOutputFile(out, target.getLocation().toString() + "/Result_Concurrency_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
 								
 								out = "\n\n Analysis cycles abstract Interpretation: \n";
-								AbstractInterpreter ai = new AbstractInterpreter(hierarchyOrder.getHypergraf());
+								SequAbstractInterpreter ai = new SequAbstractInterpreter(hierarchyOrder.getHypergraf());
 								out += ai.sequentialAbstractInterpretation();
 								Util.createOutputFile(out, target.getLocation().toString() + "/Result_AI_raw_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
 								

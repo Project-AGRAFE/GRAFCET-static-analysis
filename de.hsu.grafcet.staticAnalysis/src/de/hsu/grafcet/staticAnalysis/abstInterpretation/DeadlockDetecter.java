@@ -1,4 +1,4 @@
-package de.hsu.grafcet.staticAnalysis.analysis;
+package de.hsu.grafcet.staticAnalysis.abstInterpretation;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -13,7 +13,7 @@ import de.hsu.grafcet.staticAnalysis.hypergraf.Vertex;
 public class DeadlockDetecter {
 	
 	
-	public static String checkDeadlocks (AbstractInterpreter ai) throws ApronException{
+	public static String checkDeadlocks (SequAbstractInterpreter ai) throws ApronException{
 		String out = "Abstract interpretation based deadlock detection:";
 		boolean deadlockGlobal = false;
 		for (Subgraf subgraf : ai.getHypergraf().getSubgrafs()) {

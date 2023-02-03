@@ -1,4 +1,4 @@
-package de.hsu.grafcet.staticAnalysis.analysis;
+package de.hsu.grafcet.staticAnalysis.structuralAnalysis;
 
 import java.util.ArrayDeque;
 import java.util.Collection;
