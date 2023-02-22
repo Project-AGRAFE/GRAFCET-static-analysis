@@ -1,15 +1,54 @@
 package de.hsu.grafcet.staticAnalysis.abstInterpretation;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+
 import apron.*;
 import de.hsu.grafcet.*;
 import de.hsu.grafcet.staticAnalysis.hypergraf.*;
 import terms.*;
 
-public abstract class TransferFunction {
+public class TransferFunction {
+	
+	Statement n;
+	Abstract1 abstractValueN;
+	Manager man;
+	Environment env;
+	Abstract1 interfaceIn; 	//joined interface for multi-threading approach
+	Map<Statement, Abstract1> interfaceOut = new HashMap<Statement, Abstract1>(); //abstractEnv for every statement
+	private boolean isInterface = false;
+	
+	private TransferFunction(Statement n, Abstract1 abstractValueN, Manager man, Environment env) throws ApronException {
+		super();
+		this.n = n;
+		this.abstractValueN = new Abstract1(man, abstractValueN);
+		this.man = man;
+		this.env = env;
+	}
+
+	public TransferFunction(Statement n, Abstract1 abstractValueN, Manager man, Environment env, Abstract1 interfaceIn) throws ApronException {
+		this(n, abstractValueN, man, env);
+		this.interfaceIn = interfaceIn;
+		isInterface = true;
+		//apply interface  //TODO Welch3e iunformationen kommen aus eigener Analyse und welche aus dem interface? kann zu zu starker Überapproximation führen?
+		this.abstractValueN.join(man, interfaceIn);
+	}
 	
 	
-	public static Abstract1 transfer(Statement n, Abstract1 abstractValueN, Manager man, Environment env) throws ApronException {
+	public Abstract1 transferInterface() throws ApronException {
+		if (isInterface) {
+			return transfer();
+		} else {
+			throw new IllegalArgumentException("Wrong initialization; interface is not set");
+		}
+	}
+	public Map<Statement, Abstract1> getInterfaceEntry() {
+		return interfaceOut;
+	}
+
+
+	public Abstract1 transfer() throws ApronException {
 		Abstract1 copyabstractValueN = new Abstract1(man, abstractValueN);
 		if (n instanceof Edge) {
 			return transferEdge((Edge) n, copyabstractValueN, man, env);
@@ -115,19 +154,20 @@ public abstract class TransferFunction {
 		return out;
 	}
 	
-	private static Abstract1 transferVertex (Vertex n, Abstract1 abstractValueN, Manager man, Environment env) throws ApronException {
+	private Abstract1 transferVertex (Vertex n, Abstract1 abstractValueN, Manager man, Environment env) throws ApronException {
 		for (ActionType actionType : n.getActionTypes()) {
 			if (actionType instanceof StoredAction) {
 				StoredAction storedAction = (StoredAction) actionType;
-				switch (storedAction.getStoredActionType().getValue()) {
-				case StoredActionType.ACTIVATION_VALUE: {
+				if (storedAction.getStoredActionType().getValue() == StoredActionType.ACTIVATION_VALUE ||
+						//stored Action by deactivation handled by transformation
+						storedAction.getStoredActionType().getValue() == StoredActionType.DEACTIVATION_VALUE) {
 					Term value = storedAction.getValue();
 					if (storedAction.getVariable().getVariableDeclaration().getSort() instanceof Bool) {
 						Texpr1Node texprNode;
 						if (((BooleanConstant)value).isValue()) {
 							texprNode = new Texpr1CstNode(new Interval(1,1));
 						} else {
-							texprNode = new Texpr1CstNode(new Interval(0,0));
+							texprNode = new Texpr1CstNode(new Interval(0,0)); //TODO das funktioniert nicht. in else fallen alle anderen Fäll, wie x = a && b. Da kann man nicht einfach [0, 0] zuweisen
 						}
 						Texpr1Intern texprIntern = new Texpr1Intern(env, texprNode);
 						abstractValueN.assign(man, 
@@ -140,16 +180,7 @@ public abstract class TransferFunction {
 								storedAction.getVariable().getVariableDeclaration().getName(),
 								texprIntern, null);
 					}
-					break;
-				} case StoredActionType.DEACTIVATION_VALUE: {
-					if (storedAction.getVariable().getVariableDeclaration().getSort() instanceof Bool) {
-						
-					}else {
-						
-					}
-					//covered with hypergraf transformation
-					throw new IllegalArgumentException("normalization of actions failed");
-				} case StoredActionType.EVENT_VALUE: {
+				}else if(storedAction.getStoredActionType().getValue() == StoredActionType.EVENT_VALUE) {
 					if (storedAction.getVariable().getVariableDeclaration().getSort() instanceof Bool) {
 						
 					}else {
@@ -171,19 +202,36 @@ public abstract class TransferFunction {
 					
 					throw new NotImplementedException(); //Es ist wohl unwarscheinlich, dass in der Bedingung interne Variablen auftauchen
 					
-					
-				}
-				default:
+				}else {
 					throw new IllegalArgumentException("Unexpected value: " + storedAction.getStoredActionType());
 				}
 				
+				setInterfaceEntry(n, storedAction.getVariable().getVariableDeclaration().getName(), abstractValueN);
 			}else {
 				//throw new NotImplementedException();
 			}
+			
+
 		}
 		return abstractValueN;
 	}
 	
+	//TODO TESTen bitte (plus Aufruf)
+	private void setInterfaceEntry(Statement n, String var, Abstract1 abs) throws ApronException {
+		Interval[] initialBox = new Interval[env.getVars().length];
+		Interval intervalVar = abs.getBound(man, var);
+		int i = 0;
+		for (Var v : env.getVars()) {
+			if (v.compareTo(new StringVar(var)) == 0) {
+				initialBox[i] = intervalVar;
+			}else{
+				initialBox[i] = new Interval(1, -1); //TODO muss leer sein
+			}
+			i++;
+		}
+		Abstract1 interfaceEntry = new Abstract1(man, env, env.getVars(), initialBox);
+		interfaceOut.put(n, interfaceOut.get(n).joinCopy(man, interfaceEntry));
+	}
 	
 	private static Texpr1Node recursiveLinearExprBuilder(Term term) {
 		if (term instanceof Variable) {
@@ -234,5 +282,6 @@ public abstract class TransferFunction {
 			throw new IllegalArgumentException();
 		}
 	}
+
 
 }

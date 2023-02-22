@@ -13,6 +13,10 @@ import de.hsu.grafcet.staticAnalysis.hypergraf.Vertex;
 public class DeadlockDetecter {
 	
 	
+	//TODO Grafcet übergeben statt subgraf
+	
+	//FIXME Kozept so wie implementiert nicht sound. (siehe confluence)
+	
 	public static String checkDeadlocks (SequAbstractInterpreter ai) throws ApronException{
 		String out = "Abstract interpretation based deadlock detection:";
 		boolean deadlockGlobal = false;

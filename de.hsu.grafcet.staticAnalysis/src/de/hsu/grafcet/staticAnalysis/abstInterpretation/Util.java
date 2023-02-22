@@ -1,14 +1,18 @@
 package de.hsu.grafcet.staticAnalysis.abstInterpretation;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 import apron.Abstract1;
 import apron.ApronException;
+import apron.Environment;
+import apron.Interval;
 import apron.Manager;
 import de.hsu.grafcet.staticAnalysis.hierarchyOrder.HierarchyDependency;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Statement;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Subgraf;
+import de.hsu.grafcet.staticAnalysis.hypergraf.Vertex;
 
 public class Util {
 
@@ -66,6 +70,47 @@ public class Util {
 		}else {
 			throw new IllegalArgumentException("Different statements in interfaces. Comparing is not possible");
 		}
+	}
+	
+	public static String printAbstMap(String caption, Map<Statement, Abstract1> abstractEnvMap, Environment env, Manager man) {
+		int rowLength = 18;
+		String out = "";
+		int j = env.getVars().length / rowLength;
+		out += "\n===== " + caption + " =====";
+		for(int i = 0; i <= j; i++) {
+			out += "\n===== " + caption + " (" + i + ") =====";
+			out += "\nVariables: \t" + printArray(env.getVars(), i*rowLength, rowLength);			
+			for (Statement n : abstractEnvMap.keySet()) {
+				try {
+					String nType = "";
+					if(n instanceof Vertex) {
+						nType = "Step ";
+					} else {
+						nType = "Tran ";
+					}
+					Abstract1 abstr1 = abstractEnvMap.get(n);
+					Interval[] box = abstr1.toBox(man);
+					out += "\n" + nType + n.getId() + ": \t" + printArray(box, i*rowLength, rowLength);
+				} catch (ApronException e) {
+					e.printStackTrace();
+				}
+			}
+			
+		}
+		
+		
+
+	
+		return out;
+	}
+	
+	private static String printArray(Object[] obj, int start, int n) {
+		String out = "";
+		int end = Math.min(start + n, obj.length);
+		for (int i = start; i < end; i++) {
+			out += obj[i] + "\t";
+		}
+		return out;
 	}
 	
 	

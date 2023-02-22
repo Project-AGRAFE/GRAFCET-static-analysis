@@ -28,6 +28,7 @@ public class ThreadModAbstractInterpreter {
 	Environment env;
 	String[] varNames;
 	Set<VariableDeclaration> variableDeclarationSet = new LinkedHashSet<VariableDeclaration>();
+	String fullLog = "";
 	
 	
 	
@@ -55,13 +56,42 @@ public class ThreadModAbstractInterpreter {
 			//shallow copy (!) the interface
 			copyAbstInterface = new HashMap<HierarchyDependency, Map<Statement, Abstract1>>(abstInterface);
 			for (HierarchyDependency dependency : hierarchyOrder.getDependencies()) {
-				SequAbstractInterpreter seqAI = new SequAbstractInterpreter(dependency, man, env);
+				Abstract1 i = joinInterface(dependency);
+				SequAbstractInterpreter seqAI = new SequAbstractInterpreter(dependency, man, env, i); //TODO Interface übergeben
+				seqAI.runAnalysis();
+				abstInterface.put(dependency, seqAI.getInterfaceOut());
 				Map<Statement, Abstract1> abstEnvMapSubgraf = seqAI.getDeepcopyAbstractEnvMap();
+				fullLog += seqAI.getOutputString();
+				//initialize Interface
+				if (abstInterface.get(dependency) == null) {
+					abstInterface.put(dependency, abstEnvMapSubgraf); //FIXME führt zu überapproximation. in SeqAbstractInterpreter sollte ein spezielles Interface nur bei Aktionen erstellt werden
+				}
 				abstInterface.put(dependency, Util.joinCopyEnvMaps(man, abstInterface.get(dependency), abstEnvMapSubgraf));
 			}	
 			
 		} while (!Util.equalsInterface(man, abstInterface, copyAbstInterface)); //FIXME FUNKTIONIERT DAS?
 	}
+	
+	public String getOut() {
+		return fullLog;
+	}
+	
+	private Abstract1 joinInterface(HierarchyDependency currentDependency) throws ApronException {
+		Abstract1 absOut = new Abstract1(man, env, true);
+		for (HierarchyDependency d : hierarchyOrder.getDependencies()) {
+			if (d != currentDependency) {
+				for(Abstract1 a : abstInterface.get(d).values()){
+					absOut.join(man, a);
+				}
+			} else {
+				
+			}
+		}
+		return absOut;
+	}
+	
+	
+	//TODO obige Änderungen Testen: einen Abhängigen Teilgrafen erstellen und einen unabhägngigen. Bzw. mit vars, die Abhängig sind und vars, die nicht abhängig sind, um zu sehen, die Algorithmus darauf reagiert
 	
 	
 	
@@ -100,14 +130,19 @@ public class ThreadModAbstractInterpreter {
 			varNames[i] = var.getName();
 			i++;
 		}
-		
-		collectVariableNames();
 		env = new Environment(varNames, new String[] {});
 	}
 	
 	
 	
-	
+	@Override
+	public String toString() {
+		String out = "";
+		for(HierarchyDependency d : abstInterface.keySet()) {
+			out += Util.printAbstMap(d.getInferiorName(), abstInterface.get(d), env, man);
+		}
+		return out;
+	}
 	
 
 	

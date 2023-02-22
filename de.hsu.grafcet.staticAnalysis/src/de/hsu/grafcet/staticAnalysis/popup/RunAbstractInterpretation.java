@@ -32,6 +32,7 @@ import org.eclipse.ui.PlatformUI;
 import apron.ApronException;
 import de.hsu.grafcet.*;
 import de.hsu.grafcet.staticAnalysis.abstInterpretation.SequAbstractInterpreter;
+import de.hsu.grafcet.staticAnalysis.abstInterpretation.ThreadModAbstractInterpreter;
 import de.hsu.grafcet.staticAnalysis.abstInterpretation.DeadlockDetecter;
 import de.hsu.grafcet.staticAnalysis.hierarchyOrder.HierarchyDependency;
 import de.hsu.grafcet.staticAnalysis.hierarchyOrder.HierarchyOrder;
@@ -51,13 +52,15 @@ public class RunAbstractInterpretation implements IObjectActionDelegate{
 	@Override
 	public void run(IAction arg0) {
 		if (files != null) {
-			try {
-				analysis = MessageDialog.open(MessageDialog.QUESTION, shell, 
-						"Choose properties to analyze.", 
-						"Message", 0, "", "2", "3", "4", "5", "6");
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+
+			//TEST MessageDialog:
+			//			try {
+//				analysis = MessageDialog.open(MessageDialog.QUESTION, shell, 
+//						"Choose properties to analyze.", 
+//						"Message", 0, "", "2", "3", "4", "5", "6");
+//			} catch (Exception e) {
+//				e.printStackTrace();
+//			}
 
 			
 			IRunnableWithProgress operation = new IRunnableWithProgress() {
@@ -86,14 +89,18 @@ public class RunAbstractInterpretation implements IObjectActionDelegate{
 								Util.createOutputFile(out, target.getLocation().toString() + "/Result_Concurrency_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
 								
 								out = "\n\n Analysis cycles abstract Interpretation: \n";
-								SequAbstractInterpreter ai = new SequAbstractInterpreter(hierarchyOrder.getHypergraf());
-								out += ai.sequentialAbstractInterpretation();
+								ThreadModAbstractInterpreter tai = new ThreadModAbstractInterpreter(hierarchyOrder);
+								tai.runAnalysis();
+								out += tai.toString();
+//								
+//								SequAbstractInterpreter ai = new SequAbstractInterpreter(hierarchyOrder.getHypergraf());
+//								out += ai.sequentialAbstractInterpretation();
 								Util.createOutputFile(out, target.getLocation().toString() + "/Result_AI_raw_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
 								
 								
 								out = "\n\n Verification results abstract Interpretation: \n";
 								//TODO call methods for properties like Deadlocks
-								out += DeadlockDetecter.checkDeadlocks(ai);
+//								out += DeadlockDetecter.checkDeadlocks(ai);
 								
 								Util.createOutputFile(out, target.getLocation().toString() + "/Result_AI_veri_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
 					

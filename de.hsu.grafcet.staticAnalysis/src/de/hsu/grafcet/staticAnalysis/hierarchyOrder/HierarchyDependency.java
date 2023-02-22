@@ -1,5 +1,6 @@
 package de.hsu.grafcet.staticAnalysis.hierarchyOrder;
 
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -28,6 +29,7 @@ public class HierarchyDependency{
 	Map<Vertex, Set<Vertex>> concurrentVertices = new LinkedHashMap<Vertex, Set<Vertex>>();
 	ISubgraf superior;
 	Subgraf inferior;
+	String inferiorName;
 	InitializationType type;
 	Set<Vertex> initiallyActiveVertices = null;
 	
@@ -37,6 +39,7 @@ public class HierarchyDependency{
 		this.superiorTriggerVertex = superiorTriggerVertex;
 		this.superior = superior;
 		this.inferior = inferior;
+		this.inferiorName = inferior.getPartialGrafcet().getName();
 		this.type = type;
 	}
 
@@ -101,7 +104,8 @@ public class HierarchyDependency{
 		}
 		return initiallyActiveVertices;
 	}
-	public void setInitiallyActiveVertices() {
+	private void setInitiallyActiveVertices() {
+		initiallyActiveVertices = new HashSet<Vertex>();
 		switch (this.getType()) {
 		case initialStep: {
 			initiallyActiveVertices.addAll(this.inferior.getInitialVertices());
@@ -145,6 +149,9 @@ public class HierarchyDependency{
 		}
 	}
 
+	public String getInferiorName() {
+		return inferiorName;
+	}
 	
 	public void addConcurrentVertices (Vertex annotatedVertex, Set<Vertex> concurrentVertices) {
 		for (Vertex concurrentVertex : concurrentVertices) {
