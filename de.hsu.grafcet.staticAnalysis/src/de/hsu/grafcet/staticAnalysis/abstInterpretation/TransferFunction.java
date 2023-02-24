@@ -15,8 +15,9 @@ public class TransferFunction {
 	Abstract1 abstractValueN;
 	Manager man;
 	Environment env;
-	Abstract1 interfaceIn; 	//joined interface for multi-threading approach
-	Map<Statement, Abstract1> interfaceOut = new HashMap<Statement, Abstract1>(); //abstractEnv for every statement
+	//Abstract1 interfaceIn; 	//joined interface for multi-threading approach
+	//Map<Statement, Abstract1> interfaceOut = new HashMap<Statement, Abstract1>(); //abstractEnv for every statement
+	Abstract1 interfaceEntry;
 	private boolean isInterface = false;
 	
 	private TransferFunction(Statement n, Abstract1 abstractValueN, Manager man, Environment env) throws ApronException {
@@ -29,7 +30,7 @@ public class TransferFunction {
 
 	public TransferFunction(Statement n, Abstract1 abstractValueN, Manager man, Environment env, Abstract1 interfaceIn) throws ApronException {
 		this(n, abstractValueN, man, env);
-		this.interfaceIn = interfaceIn;
+		//this.interfaceIn = interfaceIn;
 		isInterface = true;
 		//apply interface  //TODO Welch3e iunformationen kommen aus eigener Analyse und welche aus dem interface? kann zu zu starker Überapproximation führen?
 		this.abstractValueN.join(man, interfaceIn);
@@ -43,8 +44,9 @@ public class TransferFunction {
 			throw new IllegalArgumentException("Wrong initialization; interface is not set");
 		}
 	}
-	public Map<Statement, Abstract1> getInterfaceEntry() {
-		return interfaceOut;
+
+	public Abstract1 getInterfaceEntry() {
+		return interfaceEntry;
 	}
 
 
@@ -217,20 +219,38 @@ public class TransferFunction {
 	}
 	
 	//TODO TESTen bitte (plus Aufruf)
-	private void setInterfaceEntry(Statement n, String var, Abstract1 abs) throws ApronException {
-		Interval[] initialBox = new Interval[env.getVars().length];
-		Interval intervalVar = abs.getBound(man, var);
-		int i = 0;
+	private void setInterfaceEntry(Statement n, String keepValueVar, Abstract1 abstractValueN) throws ApronException {
+		
+		
+		Abstract1 newInterfaceEntry = new Abstract1(man, abstractValueN);
 		for (Var v : env.getVars()) {
-			if (v.compareTo(new StringVar(var)) == 0) {
-				initialBox[i] = intervalVar;
-			}else{
-				initialBox[i] = new Interval(1, -1); //TODO muss leer sein
+			if (v.toString() != keepValueVar) {
+				Texpr1Node exprN = new Texpr1CstNode(new Interval(1, -1));
+				Texpr1Intern exprI = new Texpr1Intern(env, exprN);
+				newInterfaceEntry.assign(man, v, exprI, null);
 			}
-			i++;
 		}
-		Abstract1 interfaceEntry = new Abstract1(man, env, env.getVars(), initialBox);
-		interfaceOut.put(n, interfaceOut.get(n).joinCopy(man, interfaceEntry));
+//		Interval[] initialBox = new Interval[env.getVars().length];
+//		Interval intervalVar = abs.getBound(man, var);
+//		int i = 0;
+//		for (Var v : env.getVars()) {
+//			if (v.compareTo(new StringVar(var)) == 0) {
+//				initialBox[i] = intervalVar;
+//			}else{
+//				initialBox[i] = new Interval(1, -1);
+//			}
+//			i++;
+//		}
+//		Abstract1 interfaceEntry = new Abstract1(man, env, env.getVars(), initialBox);
+//		System.out.println(Arrays.toString(interfaceEntry.toBox(man)));
+//		System.out.println(Util.printAbstMap("Test", interfaceOut, env, man));
+		if (interfaceEntry != null) {
+			interfaceEntry.join(man, newInterfaceEntry);
+		} else {
+			interfaceEntry = newInterfaceEntry;
+		}
+		//System.out.println(Arrays.toString(interfaceEntry.toBox(man)));
+		
 	}
 	
 	private static Texpr1Node recursiveLinearExprBuilder(Term term) {

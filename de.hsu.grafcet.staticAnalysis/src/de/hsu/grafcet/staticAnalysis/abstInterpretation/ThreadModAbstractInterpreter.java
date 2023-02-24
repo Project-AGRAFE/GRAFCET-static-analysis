@@ -22,8 +22,8 @@ public class ThreadModAbstractInterpreter {
 
 	HierarchyOrder hierarchyOrder;
 	Hypergraf hypergraf;
-	Map<HierarchyDependency, Map<Statement, Abstract1>> abstInterface = new HashMap<HierarchyDependency, Map<Statement, Abstract1>>(); //Interface containing current abstractEnvMap (cf. SequAbstractInterpreter) for every subgraf
-//	Map<Statement, Abstract1> abstEnvMapHypergraf = new HashMap<Statement, Abstract1>(); //named TE by Kusano et. al
+	Map<HierarchyDependency, Map<Statement, Abstract1>> interfaceMap = new HashMap<HierarchyDependency, Map<Statement, Abstract1>>(); //Interface containing current abstractEnvMap (cf. SequAbstractInterpreter) for every subgraf
+	Map<HierarchyDependency, Map<Statement, Abstract1>> abstResultsHypergrafMap = new HashMap<HierarchyDependency, Map<Statement, Abstract1>>(); 
 	Manager man = new Box();
 	Environment env;
 	String[] varNames;
@@ -54,22 +54,25 @@ public class ThreadModAbstractInterpreter {
 		
 		do {
 			//shallow copy (!) the interface
-			copyAbstInterface = new HashMap<HierarchyDependency, Map<Statement, Abstract1>>(abstInterface);
+			copyAbstInterface = new HashMap<HierarchyDependency, Map<Statement, Abstract1>>(interfaceMap);
 			for (HierarchyDependency dependency : hierarchyOrder.getDependencies()) {
 				Abstract1 i = joinInterface(dependency);
 				SequAbstractInterpreter seqAI = new SequAbstractInterpreter(dependency, man, env, i); //TODO Interface übergeben
 				seqAI.runAnalysis();
-				abstInterface.put(dependency, seqAI.getInterfaceOut());
-				Map<Statement, Abstract1> abstEnvMapSubgraf = seqAI.getDeepcopyAbstractEnvMap();
-				fullLog += seqAI.getOutputString();
+				abstResultsHypergrafMap.put(dependency, seqAI.getDeepcopyAbstractEnvMap());
+				//TODO   Map<Statement, Abstract1> abstEnvMapSubgraf = seqAI.getDeepcopyAbstractEnvMap();
+				fullLog += seqAI.getOutputString(); //TODO hier werden die Iterationen nicht deutlich (bezüglich Interface)
 				//initialize Interface
-				if (abstInterface.get(dependency) == null) {
-					abstInterface.put(dependency, abstEnvMapSubgraf); //FIXME führt zu überapproximation. in SeqAbstractInterpreter sollte ein spezielles Interface nur bei Aktionen erstellt werden
+				if (interfaceMap.get(dependency) == null) {
+					interfaceMap.put(dependency, seqAI.getInterfaceOut());
+					//abstInterface.put(dependency, abstEnvMapSubgraf); //FIXME führt zu überapproximation. in SeqAbstractInterpreter sollte ein spezielles Interface nur bei Aktionen erstellt werden
+				} else {
+					interfaceMap.put(dependency, Util.joinInterface(man, interfaceMap.get(dependency), seqAI.getInterfaceOut()));
 				}
-				abstInterface.put(dependency, Util.joinCopyEnvMaps(man, abstInterface.get(dependency), abstEnvMapSubgraf));
+				
 			}	
 			
-		} while (!Util.equalsInterface(man, abstInterface, copyAbstInterface)); //FIXME FUNKTIONIERT DAS?
+		} while (!Util.equalsInterface(man, interfaceMap, copyAbstInterface)); //FIXME FUNKTIONIERT DAS?
 	}
 	
 	public String getOut() {
@@ -80,11 +83,11 @@ public class ThreadModAbstractInterpreter {
 		Abstract1 absOut = new Abstract1(man, env, true);
 		for (HierarchyDependency d : hierarchyOrder.getDependencies()) {
 			if (d != currentDependency) {
-				for(Abstract1 a : abstInterface.get(d).values()){
-					absOut.join(man, a);
+				if (interfaceMap.get(d) != null) {
+					for(Abstract1 a : interfaceMap.get(d).values()){
+						absOut.join(man, a);
+					}
 				}
-			} else {
-				
 			}
 		}
 		return absOut;
@@ -105,8 +108,8 @@ public class ThreadModAbstractInterpreter {
 		Abstract1 abstInterfaceSubgraf = new Abstract1(man, env, true);
 		for (Subgraf subgrafTemp : hypergraf.getSubgrafs()){
 			if (subgraf != subgrafTemp) {
-				for (Statement statement : abstInterface.get(subgrafTemp).keySet()) {
-					abstInterfaceSubgraf.join(man, abstInterface.get(subgrafTemp).get(statement));
+				for (Statement statement : interfaceMap.get(subgrafTemp).keySet()) {
+					abstInterfaceSubgraf.join(man, interfaceMap.get(subgrafTemp).get(statement));
 				}
 			}
 		}
@@ -137,9 +140,13 @@ public class ThreadModAbstractInterpreter {
 	
 	@Override
 	public String toString() {
-		String out = "";
-		for(HierarchyDependency d : abstInterface.keySet()) {
-			out += Util.printAbstMap(d.getInferiorName(), abstInterface.get(d), env, man);
+		String out = "\n\n\n#################  Final interfaces  ###############";
+		for(HierarchyDependency d : interfaceMap.keySet()) {
+			out += Util.printAbstMap(d.getInferiorName(), interfaceMap.get(d), env, man);
+		}
+		out += "\n\n\n#################  Final abstract values  ###############";
+		for(HierarchyDependency d : abstResultsHypergrafMap.keySet()) {
+			out += Util.printAbstMap(d.getInferiorName(), abstResultsHypergrafMap.get(d), env, man);
 		}
 		return out;
 	}

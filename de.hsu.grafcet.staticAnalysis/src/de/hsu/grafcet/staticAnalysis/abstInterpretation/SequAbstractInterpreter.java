@@ -62,6 +62,9 @@ public class SequAbstractInterpreter {
 		Set<Statement> statements = new LinkedHashSet<Statement>();//: Statements S u T
 		statements.addAll(subgraf.getVertices());
 		statements.addAll(subgraf.getEdges());
+		for (Statement s : statements) {
+			s.resetVisited();
+		}
 		
 		//set abstractEnvMap to bottom
 		for (Statement n : statements) {
@@ -85,11 +88,16 @@ public class SequAbstractInterpreter {
 
 		while (!worklist.isEmpty()) {
 			Statement statement = worklist.pollFirst();
+			
+			if (statement instanceof Edge && statement.getId() == 13) {
+				System.out.println("13");
+			}
+			
 			statement.increaseVisited();
 			TransferFunction trans = new TransferFunction(statement, abstractEnvMap.get(statement), man, env, interfaceIn);
 //			Abstract1 e = TransferFunction.transfer(statement, abstractEnvMap.get(statement), man, env);
 			Abstract1 e = trans.transferInterface();
-			setInterfaceOut(trans.getInterfaceEntry());
+			setInterfaceOut(trans.getInterfaceEntry(), statement);
 			for (Statement downstream : getDownstream(statement, subgraf)) {
 				if (!e.isIncluded(man, abstractEnvMap.get(downstream))) {
 					if(statement.getVisited() > 5) {
@@ -113,10 +121,12 @@ public class SequAbstractInterpreter {
 		outputString = out;
 	}
 	
-	private void setInterfaceOut(Map<Statement, Abstract1> interfaceEntry) throws ApronException {
-		for (Statement n : interfaceOut.keySet()) {
-			if (interfaceEntry.containsKey(n)) {
-				interfaceOut.put(n, interfaceOut.get(n).joinCopy(man, interfaceEntry.get(n)));
+	private void setInterfaceOut(Abstract1 interfaceEntry, Statement n) throws ApronException {
+		if (interfaceEntry != null) {
+			if (interfaceOut.containsKey(n)) {
+				interfaceOut.put(n, interfaceOut.get(n).joinCopy(man, interfaceEntry));
+			} else {
+				interfaceOut.put(n, interfaceEntry);
 			}
 		}
 	}

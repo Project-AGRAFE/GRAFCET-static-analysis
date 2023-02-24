@@ -2,7 +2,9 @@ package de.hsu.grafcet.staticAnalysis.abstInterpretation;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import apron.Abstract1;
 import apron.ApronException;
@@ -22,6 +24,30 @@ public class Util {
 			copyAbstractEnvMap.put(s, new Abstract1(man, abstractEnvMap.get(s)));
 		}
 		return copyAbstractEnvMap;		
+	}
+	
+	public static Map<Statement, Abstract1> joinInterface(Manager man, 
+			Map<Statement, Abstract1> abstInterface, Map<Statement, Abstract1> newInterface) throws ApronException{
+		Map<Statement, Abstract1> abstInterfaceOut = new HashMap<Statement, Abstract1>();
+		Set<Statement> visitedStatements = new HashSet<Statement>();
+		for (Statement s : abstInterface.keySet()) {
+			if (newInterface.containsKey(s)) {
+				abstInterfaceOut.put(s, abstInterface.get(s).joinCopy(man, newInterface.get(s)));
+				visitedStatements.add(s);
+			}
+		}
+		Set<Statement> unvisitedStements = new HashSet<Statement>(newInterface.keySet());
+		unvisitedStements.removeAll(visitedStatements);
+		
+		//Tritt dieser Fall überhaupt ein? Es werden ja nicht neue Statements in newInterface aufgenommen, da die Struktur des Grafcet gleich bleibt
+		for (Statement s : unvisitedStements) {
+			throw new IllegalArgumentException("Error in algorithm");
+//			if (abstInterface.containsKey(s)) {
+//				throw new IllegalArgumentException("Error in algorithm");
+//			}
+//			abstInterfaceOut.put(s, newInterface.get(s));
+		}
+		return abstInterfaceOut;
 	}
 	
 	public static Map<Statement, Abstract1> joinCopyEnvMaps	(Manager man, 
@@ -52,7 +78,8 @@ public class Util {
 			}
 			return isEaqual;
 		}else {
-			throw new IllegalArgumentException("Different statements in abstractEnvMaps. Comparing is not possible");
+			//throw new IllegalArgumentException("Different statements in abstractEnvMaps. Comparing is not possible");
+			return false;
 		}
 	}
 	public static boolean equalsInterface (Manager man, 
@@ -62,15 +89,18 @@ public class Util {
 				interface2.keySet().containsAll(interface1.keySet())) {
 			boolean isEaqual = true;
 			for (HierarchyDependency d : interface1.keySet()) {
-				if (!equalsEnvMaps(man, interface1.get(d), interface1.get(d))) {
+				if (!equalsEnvMaps(man, interface1.get(d), interface2.get(d))) {
 					isEaqual = false;
+					return false;
 				}
 			}
 			return isEaqual;
 		}else {
-			throw new IllegalArgumentException("Different statements in interfaces. Comparing is not possible");
+			return false;
+			//throw new IllegalArgumentException("Different statements in interfaces. Comparing is not possible");
 		}
 	}
+	
 	
 	public static String printAbstMap(String caption, Map<Statement, Abstract1> abstractEnvMap, Environment env, Manager man) {
 		int rowLength = 18;

@@ -72,7 +72,7 @@ public class RunAbstractInterpretation implements IObjectActionDelegate{
 							IFile model = (IFile)filesIt.next();
 							URI modelURI = URI.createPlatformResourceURI(model.getFullPath().toString(), true);
 							try {
-								System.out.println(analysis);
+								//System.out.println(analysis);
 								
 								IContainer target = model.getProject().getFolder("Static_Analysis");
 								ResourceSet resSet = new ResourceSetImpl();
@@ -88,10 +88,12 @@ public class RunAbstractInterpretation implements IObjectActionDelegate{
 								}
 								Util.createOutputFile(out, target.getLocation().toString() + "/Result_Concurrency_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
 								
-								out = "\n\n Analysis cycles abstract Interpretation: \n";
+								out = "\n\n Analysis cycles abstract Interpretation (24.02): \n";
 								ThreadModAbstractInterpreter tai = new ThreadModAbstractInterpreter(hierarchyOrder);
 								tai.runAnalysis();
 								out += tai.toString();
+//								System.out.println(out);
+								out += tai.getOut();
 //								
 //								SequAbstractInterpreter ai = new SequAbstractInterpreter(hierarchyOrder.getHypergraf());
 //								out += ai.sequentialAbstractInterpretation();
