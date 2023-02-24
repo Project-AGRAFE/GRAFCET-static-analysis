@@ -85,13 +85,10 @@ public class SequAbstractInterpreter {
 		worklist.addAll(dependency.getInitiallyActiveVertices());
 
 		out += "\n" + Util.printAbstMap("after initialization", abstractEnvMap, env, man);
+		out += "\n" + "==== interface === \n" + Arrays.toString(interfaceIn.toBox(man));
 
 		while (!worklist.isEmpty()) {
 			Statement statement = worklist.pollFirst();
-			
-			if (statement instanceof Edge && statement.getId() == 13) {
-				System.out.println("13");
-			}
 			
 			statement.increaseVisited();
 			TransferFunction trans = new TransferFunction(statement, abstractEnvMap.get(statement), man, env, interfaceIn);
@@ -101,7 +98,7 @@ public class SequAbstractInterpreter {
 			for (Statement downstream : getDownstream(statement, subgraf)) {
 				if (!e.isIncluded(man, abstractEnvMap.get(downstream))) {
 					if(statement.getVisited() > 5) {
-						out += "\n" + "widening ";
+//						out += "\n" + "widening ";
 						abstractEnvMap.get(downstream).join(man, abstractEnvMap.get(downstream).widening(man, e));
 						//reset other widening-counters to make analysis more precise:
 						for (Statement s : statements) {
@@ -111,13 +108,14 @@ public class SequAbstractInterpreter {
 						abstractEnvMap.get(downstream).join(man, e);
 					}
 					worklist.add(downstream);
-					out += "\n" + Util.printAbstMap("in progress - Step or tran = " + statement.getId(), abstractEnvMap, env, man);
+//					out += "\n" + Util.printAbstMap("in progress - Step or tran = " + statement.getId(), abstractEnvMap, env, man);
 				}
 			}
 			
-			out += "\n" + Util.printAbstMap("termination - result", abstractEnvMap, env, man);
-			out += "\n" + "\n\n ----";
+
 		}
+		out += "\n" + Util.printAbstMap("termination - result", abstractEnvMap, env, man);
+		out += "\n" + "\n\n ----";
 		outputString = out;
 	}
 	

@@ -93,6 +93,7 @@ public class RunAbstractInterpretation implements IObjectActionDelegate{
 								tai.runAnalysis();
 								out += tai.toString();
 //								System.out.println(out);
+								out += "\n\n\n\n\n ######## full log: ##########  \n #############################\n";
 								out += tai.getOut();
 //								
 //								SequAbstractInterpreter ai = new SequAbstractInterpreter(hierarchyOrder.getHypergraf());

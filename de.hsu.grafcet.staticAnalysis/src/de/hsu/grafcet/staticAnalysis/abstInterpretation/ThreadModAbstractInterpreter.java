@@ -51,8 +51,10 @@ public class ThreadModAbstractInterpreter {
 	 */
 	private void threadModularAbstractInterpretation() throws ApronException {
 		Map<HierarchyDependency, Map<Statement, Abstract1>>  copyAbstInterface;
-		
+		int iteration = 1;
 		do {
+			fullLog += " \n\n ========  iteration " + iteration + " ======== \n\n";
+			iteration ++;
 			//shallow copy (!) the interface
 			copyAbstInterface = new HashMap<HierarchyDependency, Map<Statement, Abstract1>>(interfaceMap);
 			for (HierarchyDependency dependency : hierarchyOrder.getDependencies()) {
@@ -61,7 +63,7 @@ public class ThreadModAbstractInterpreter {
 				seqAI.runAnalysis();
 				abstResultsHypergrafMap.put(dependency, seqAI.getDeepcopyAbstractEnvMap());
 				//TODO   Map<Statement, Abstract1> abstEnvMapSubgraf = seqAI.getDeepcopyAbstractEnvMap();
-				fullLog += seqAI.getOutputString(); //TODO hier werden die Iterationen nicht deutlich (bezüglich Interface)
+				fullLog += seqAI.getOutputString(); 
 				//initialize Interface
 				if (interfaceMap.get(dependency) == null) {
 					interfaceMap.put(dependency, seqAI.getInterfaceOut());
