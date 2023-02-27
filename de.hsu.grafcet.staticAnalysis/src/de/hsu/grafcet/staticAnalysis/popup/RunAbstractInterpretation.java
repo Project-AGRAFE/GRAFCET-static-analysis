@@ -71,10 +71,9 @@ public class RunAbstractInterpretation implements IObjectActionDelegate{
 													
 							IFile model = (IFile)filesIt.next();
 							URI modelURI = URI.createPlatformResourceURI(model.getFullPath().toString(), true);
+							IContainer target = model.getProject().getFolder("Static_Analysis");
 							try {
 								//System.out.println(analysis);
-								
-								IContainer target = model.getProject().getFolder("Static_Analysis");
 								ResourceSet resSet = new ResourceSetImpl();
 								Resource res = resSet.getResource(modelURI,	true);
 								
@@ -109,10 +108,14 @@ public class RunAbstractInterpretation implements IObjectActionDelegate{
 					
 								
 							} catch (ApronException e){
+								//TODO unschöne Implementierung, mit dem Error, da es nur in der einen Date ist. Müsste in allen anderen auch sein --> Methode auslagern
+								Util.createOutputFile("Error: " + e, target.getLocation().toString() + "/Result_AI_veri_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
 								e.printStackTrace();
 							} catch (Exception e) {
+								Util.createOutputFile("Error: " + e, target.getLocation().toString() + "/Result_AI_veri_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
 								e.printStackTrace();
 							}finally {
+								Util.createOutputFile("Error", target.getLocation().toString() + "/Result_AI_veri_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
 								model.getProject().refreshLocal(IResource.DEPTH_INFINITE, monitor);
 							}
 						}

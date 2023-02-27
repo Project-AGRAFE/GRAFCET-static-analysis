@@ -12,6 +12,7 @@ import apron.Environment;
 import apron.Interval;
 import apron.Manager;
 import de.hsu.grafcet.staticAnalysis.hierarchyOrder.HierarchyDependency;
+import de.hsu.grafcet.staticAnalysis.hypergraf.Edge;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Statement;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Subgraf;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Vertex;
@@ -41,11 +42,10 @@ public class Util {
 		
 		//Tritt dieser Fall überhaupt ein? Es werden ja nicht neue Statements in newInterface aufgenommen, da die Struktur des Grafcet gleich bleibt
 		for (Statement s : unvisitedStements) {
-			throw new IllegalArgumentException("Error in algorithm");
-//			if (abstInterface.containsKey(s)) {
-//				throw new IllegalArgumentException("Error in algorithm");
-//			}
-//			abstInterfaceOut.put(s, newInterface.get(s));
+			if (abstInterface.containsKey(s)) {
+				throw new IllegalArgumentException("Error in algorithm");
+			}
+			abstInterfaceOut.put(s, newInterface.get(s));
 		}
 		return abstInterfaceOut;
 	}
@@ -114,13 +114,15 @@ public class Util {
 				try {
 					String nType = "";
 					if(n instanceof Vertex) {
-						nType = "Step ";
+						nType = "Step " + n.getId();
+					} else if (n instanceof Edge){
+						nType = "Tran " + n.getId();
 					} else {
-						nType = "Tran ";
+						nType = "Int   ";
 					}
 					Abstract1 abstr1 = abstractEnvMap.get(n);
 					Interval[] box = abstr1.toBox(man);
-					out += "\n" + nType + n.getId() + ": \t" + printArray(box, i*rowLength, rowLength);
+					out += "\n" + nType + ": \t" + printArray(box, i*rowLength, rowLength);
 				} catch (ApronException e) {
 					e.printStackTrace();
 				}

@@ -52,6 +52,10 @@ public class SequAbstractInterpreter {
 	
 	
 	private void sequentialAbstractInterpretation() throws ApronException{
+		//For debugging:
+//		if (subgraf.getPartialGrafcet().getName().equals("G0")){
+//			System.out.println(subgraf.getPartialGrafcet().getName());
+//		}
 		
 		String out = "";
 			
@@ -85,7 +89,10 @@ public class SequAbstractInterpreter {
 		worklist.addAll(dependency.getInitiallyActiveVertices());
 
 		out += "\n" + Util.printAbstMap("after initialization", abstractEnvMap, env, man);
-		out += "\n" + "==== interface === \n" + Arrays.toString(interfaceIn.toBox(man));
+		//out += "\n" + "==== interface === \n" + Arrays.toString(interfaceIn.toBox(man));
+		Map<Statement, Abstract1> interfaceTemp = new HashMap<Statement, Abstract1>();
+		interfaceTemp.put(null, interfaceIn);
+		out += "\n" + Util.printAbstMap("interface", interfaceTemp, env, man);
 
 		while (!worklist.isEmpty()) {
 			Statement statement = worklist.pollFirst();

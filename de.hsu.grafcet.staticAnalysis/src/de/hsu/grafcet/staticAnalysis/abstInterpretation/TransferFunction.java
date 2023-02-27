@@ -33,7 +33,7 @@ public class TransferFunction {
 		//this.interfaceIn = interfaceIn;
 		isInterface = true;
 		//apply interface  //TODO Welch3e iunformationen kommen aus eigener Analyse und welche aus dem interface? kann zu zu starker Überapproximation führen?
-		this.abstractValueN.join(man, interfaceIn);
+		this.abstractValueN.join(man, interfaceIn); //TODO geht nicht?
 	}
 	
 	

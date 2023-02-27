@@ -50,44 +50,48 @@ public class ThreadModAbstractInterpreter {
 	 * @throws ApronException
 	 */
 	private void threadModularAbstractInterpretation() throws ApronException {
-		Map<HierarchyDependency, Map<Statement, Abstract1>>  copyAbstInterface;
+		Map<HierarchyDependency, Map<Statement, Abstract1>>  copyInterfaceMap;
 		int iteration = 1;
 		do {
 			fullLog += " \n\n ========  iteration " + iteration + " ======== \n\n";
 			iteration ++;
 			//shallow copy (!) the interface
-			copyAbstInterface = new HashMap<HierarchyDependency, Map<Statement, Abstract1>>(interfaceMap);
+			copyInterfaceMap = new HashMap<HierarchyDependency, Map<Statement, Abstract1>>(interfaceMap);
 			for (HierarchyDependency dependency : hierarchyOrder.getDependencies()) {
-				Abstract1 i = joinInterface(dependency);
-				SequAbstractInterpreter seqAI = new SequAbstractInterpreter(dependency, man, env, i); //TODO Interface übergeben
+				
+//				//For debugging:
+//				if (dependency.getInferiorName().equals("G0")){
+//					System.out.println(dependency.getInferiorName());
+//				}
+				
+				Abstract1 i = joinInterface(dependency, copyInterfaceMap);
+//				System.out.println("Dep. " + dependency.getInferiorName() +  ", Interface: " + i.getBound(man, "Station2_fertig"));
+				SequAbstractInterpreter seqAI = new SequAbstractInterpreter(dependency, man, env, i);
 				seqAI.runAnalysis();
 				abstResultsHypergrafMap.put(dependency, seqAI.getDeepcopyAbstractEnvMap());
-				//TODO   Map<Statement, Abstract1> abstEnvMapSubgraf = seqAI.getDeepcopyAbstractEnvMap();
 				fullLog += seqAI.getOutputString(); 
 				//initialize Interface
 				if (interfaceMap.get(dependency) == null) {
 					interfaceMap.put(dependency, seqAI.getInterfaceOut());
-					//abstInterface.put(dependency, abstEnvMapSubgraf); //FIXME führt zu überapproximation. in SeqAbstractInterpreter sollte ein spezielles Interface nur bei Aktionen erstellt werden
 				} else {
 					interfaceMap.put(dependency, Util.joinInterface(man, interfaceMap.get(dependency), seqAI.getInterfaceOut()));
 				}
-				
 			}	
-			
-		} while (!Util.equalsInterface(man, interfaceMap, copyAbstInterface)); //FIXME FUNKTIONIERT DAS?
+		} while (!Util.equalsInterface(man, interfaceMap, copyInterfaceMap));
 	}
 	
 	public String getOut() {
 		return fullLog;
 	}
 	
-	private Abstract1 joinInterface(HierarchyDependency currentDependency) throws ApronException {
+	private Abstract1 joinInterface(HierarchyDependency currentDependency, Map<HierarchyDependency, Map<Statement, Abstract1>> interfaceMap) throws ApronException {
 		Abstract1 absOut = new Abstract1(man, env, true);
 		for (HierarchyDependency d : hierarchyOrder.getDependencies()) {
 			if (d != currentDependency) {
 				if (interfaceMap.get(d) != null) {
-					for(Abstract1 a : interfaceMap.get(d).values()){
-						absOut.join(man, a);
+					for (Statement s : interfaceMap.get(d).keySet()) {
+						absOut.join(man, interfaceMap.get(d).get(s));
+//						System.out.println("dep. " + d.getInferiorName() + ", Statement " + s.getId() + ": " + interfaceMap.get(d).get(s).getBound(man, "Station2_fertig"));
 					}
 				}
 			}
@@ -95,30 +99,6 @@ public class ThreadModAbstractInterpreter {
 		return absOut;
 	}
 	
-	
-	//TODO obige Änderungen Testen: einen Abhängigen Teilgrafen erstellen und einen unabhägngigen. Bzw. mit vars, die Abhängig sind und vars, die nicht abhängig sind, um zu sehen, die Algorithmus darauf reagiert
-	
-	
-	
-	/**
-	 * 	line 7 in Alg. 2 in paper of Kusano et. al
-	 * @param subgraf
-	 * @return
-	 * @throws ApronException
-	 */
-	private Abstract1 buildInterfaceSubgraf(Subgraf subgraf) throws ApronException {
-		Abstract1 abstInterfaceSubgraf = new Abstract1(man, env, true);
-		for (Subgraf subgrafTemp : hypergraf.getSubgrafs()){
-			if (subgraf != subgrafTemp) {
-				for (Statement statement : interfaceMap.get(subgrafTemp).keySet()) {
-					abstInterfaceSubgraf.join(man, interfaceMap.get(subgrafTemp).get(statement));
-				}
-			}
-		}
-		return abstInterfaceSubgraf;
-	}
-
-
 	/**
 	 * Bulids a String[] varnames from the output and internal variables of the Grafcet in hypergraf
 	 */
