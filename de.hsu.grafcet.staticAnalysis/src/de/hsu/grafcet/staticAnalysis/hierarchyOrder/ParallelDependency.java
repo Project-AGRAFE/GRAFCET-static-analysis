@@ -10,10 +10,9 @@ public class ParallelDependency {
 		return dependencies;
 	}
 
-	public void setDependencies(LinkedHashSet<HierarchyDependency> dependencies) {
-		this.dependencies = dependencies;
+	public void addDependency(HierarchyDependency d) {
+		dependencies.add(d);
 	}
-	
 	
 	
 }

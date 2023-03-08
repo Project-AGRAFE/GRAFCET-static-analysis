@@ -17,11 +17,7 @@ import de.hsu.grafcet.staticAnalysis.hypergraf.*;
  * @
  */
 public class HierarchyDependency{
-	
-	/**
-	 //TODO bei initialschritten kann es auch eine Menge sein!!
-	 * initial Step in case of type initialStep; superior enclosingStep in case of type enclosed; superior step corresponding to forcingOrder in case of type forced; null in case of type sourceTransition
-	 */
+
 
 	Vertex superiorTriggerVertex;	
 	Set<Vertex> reachableVertices = new LinkedHashSet<Vertex>();
@@ -31,7 +27,7 @@ public class HierarchyDependency{
 	Subgraf inferior;
 	String inferiorName;
 	InitializationType type;
-	Set<Vertex> initiallyActiveVertices = null;
+	Set<Vertex> initiallyActiveVertices = null;  //initial Step in case of type initialStep; superior enclosingStep in case of type enclosed; superior step corresponding to forcingOrder in case of type forced; null in case of type sourceTransition
 	
 	
 	public HierarchyDependency(Vertex superiorTriggerVertex,
@@ -181,7 +177,7 @@ public class HierarchyDependency{
 		}
 		return txt;
 	}
-	
+
 	
 	
 	
