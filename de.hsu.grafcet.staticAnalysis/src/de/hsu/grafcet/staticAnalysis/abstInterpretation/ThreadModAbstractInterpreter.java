@@ -30,7 +30,10 @@ public class ThreadModAbstractInterpreter {
 	Set<VariableDeclaration> variableDeclarationSet = new LinkedHashSet<VariableDeclaration>();
 	String fullLog = "";
 	
-	
+	//TEST:
+	public Environment getEnv() {
+		return env;
+	}
 	
 	
 	public ThreadModAbstractInterpreter(HierarchyOrder hierarchyOrder) {

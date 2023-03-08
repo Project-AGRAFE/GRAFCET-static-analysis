@@ -70,10 +70,16 @@ public class Hypergraf implements ISubgraf {
 		return true;
 	}
 
+	/**
+	 * @deprecated
+	 * @param step
+	 * @return
+	 */
+	
 	public Vertex getVertex(Step step) {
 		for (Subgraf sg : subgrafs) {
 			for (Vertex vertex : sg.getVertices()) {
-				if (vertex.getStep().equals(step)) {
+				if (vertex.getStep().getId() == step.getId()) { //Steps selber Verlgeichen hat nicht geklappt warum nicht? Kopie während Transformation?
 					return vertex;
 				}
 			}

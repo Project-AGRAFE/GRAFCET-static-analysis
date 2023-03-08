@@ -30,10 +30,13 @@ import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.PlatformUI;
 
 import apron.ApronException;
+import apron.Box;
+import apron.Manager;
 import de.hsu.grafcet.*;
 import de.hsu.grafcet.staticAnalysis.abstInterpretation.SequAbstractInterpreter;
 import de.hsu.grafcet.staticAnalysis.abstInterpretation.ThreadModAbstractInterpreter;
 import de.hsu.grafcet.staticAnalysis.abstInterpretation.DeadlockDetecter;
+import de.hsu.grafcet.staticAnalysis.abstInterpretation.RaceConditionDetecter;
 import de.hsu.grafcet.staticAnalysis.hierarchyOrder.HierarchyDependency;
 import de.hsu.grafcet.staticAnalysis.hierarchyOrder.HierarchyOrder;
 import de.hsu.grafcet.staticAnalysis.hypergrafTransromation.HypergrafcetGenerator;
@@ -105,7 +108,27 @@ public class RunAbstractInterpretation implements IObjectActionDelegate{
 //								out += DeadlockDetecter.checkDeadlocks(ai);
 								
 								Util.createOutputFile(out, target.getLocation().toString() + "/Result_AI_veri_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
-					
+								
+//								//TEST SACLING
+//								out = "";
+//								
+//								long start = System.currentTimeMillis();
+//								tai = new ThreadModAbstractInterpreter(hierarchyOrder);
+//								tai.runAnalysis();
+//								long end = System.currentTimeMillis();
+//								long timeInMS = (end - start);
+//								out = "Compile-time multi-thread aproach (in ms): " + timeInMS;
+//								
+//								for (HierarchyDependency d : hierarchyOrder.getDependencies()) {
+//									SequAbstractInterpreter sai = new SequAbstractInterpreter(d, new Box(), tai.getEnv());
+//								}
+//								long end2 = System.currentTimeMillis();
+//								timeInMS = (end2- end);
+//								out += "\nCompile-time for all dependencies sequential ai aproach (in ms): " + timeInMS;
+//								
+//								Util.createOutputFile(out, target.getLocation().toString() + "/Result_AI_Scaling_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
+//								
+								
 								
 							} catch (ApronException e){
 								//TODO unschöne Implementierung, mit dem Error, da es nur in der einen Date ist. Müsste in allen anderen auch sein --> Methode auslagern
