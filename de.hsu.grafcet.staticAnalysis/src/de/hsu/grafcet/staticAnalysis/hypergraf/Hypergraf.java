@@ -1,10 +1,12 @@
 package de.hsu.grafcet.staticAnalysis.hypergraf;
 
 import java.util.LinkedHashSet;
+import java.util.Set;
 
 import de.hsu.grafcet.staticAnalysis.hierarchyOrder.*;
 import de.hsu.grafcet.Grafcet;
 import de.hsu.grafcet.PartialGrafcet;
+import de.hsu.grafcet.Step;
 
 public class Hypergraf implements ISubgraf {
 
@@ -67,4 +69,34 @@ public class Hypergraf implements ISubgraf {
 		}
 		return true;
 	}
+
+	public Vertex getVertex(Step step) {
+		for (Subgraf sg : subgrafs) {
+			for (Vertex vertex : sg.getVertices()) {
+				if (vertex.getStep().equals(step)) {
+					return vertex;
+				}
+			}
+		}
+		return null;
+	}
+	
+	public Set<Edge> getUpstreamEdges(Vertex v){
+		for (Subgraf sg : subgrafs) {
+			if (sg.getVertices().contains(v)) {
+				return sg.getUpstreamEdges(v);
+			}
+		}
+		return null;
+	}
+	
+	public Set<Edge> getDownstreamEdges(Vertex v){
+		for (Subgraf sg : subgrafs) {
+			if (sg.getVertices().contains(v)) {
+				return sg.getDownstreamEdges(v);
+			}
+		}
+		return null;
+	}
+	
 }
