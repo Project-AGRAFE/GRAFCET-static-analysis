@@ -19,15 +19,15 @@ import de.hsu.grafcet.staticAnalysis.hypergraf.*;
 public class HierarchyDependency{
 
 
-	Vertex superiorTriggerVertex;	
-	Set<Vertex> reachableVertices = new LinkedHashSet<Vertex>();
-	Set<Vertex> liveVertices = new LinkedHashSet<Vertex>();
-	Map<Vertex, Set<Vertex>> concurrentVertices = new LinkedHashMap<Vertex, Set<Vertex>>();
-	ISubgraf superior;
-	Subgraf inferior;
-	String inferiorName;
-	InitializationType type;
-	Set<Vertex> initiallyActiveVertices = null;  //initial Step in case of type initialStep; superior enclosingStep in case of type enclosed; superior step corresponding to forcingOrder in case of type forced; null in case of type sourceTransition
+	private Vertex superiorTriggerVertex;	
+	private Set<Vertex> reachableVertices = new LinkedHashSet<Vertex>();
+	private Set<Vertex> liveVertices = new LinkedHashSet<Vertex>();
+	private Map<Vertex, Set<Vertex>> concurrentVertices = new LinkedHashMap<Vertex, Set<Vertex>>();
+	private ISubgraf superior;
+	private Subgraf inferior;
+	private String inferiorName;
+	private InitializationType type;
+	private Set<Vertex> initiallyActiveVertices = null;  //initial Step in case of type initialStep; superior enclosingStep in case of type enclosed; superior step corresponding to forcingOrder in case of type forced; null in case of type sourceTransition
 	
 	
 	public HierarchyDependency(Vertex superiorTriggerVertex,

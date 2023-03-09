@@ -80,14 +80,11 @@ public class RunAbstractInterpretation implements IObjectActionDelegate{
 								ResourceSet resSet = new ResourceSetImpl();
 								Resource res = resSet.getResource(modelURI,	true);
 								
+								
+								HierarchyOrder hierarchyOrder = new HierarchyOrder((Grafcet)res.getContents().get(0));
+								
 								String out = "Concurrency Analysis: \n";
-								HypergrafcetGenerator hg = new HypergrafcetGenerator((Grafcet)res.getContents().get(0));
-								HierarchyOrder hierarchyOrder = hg.returnHierarchyOrder();
-								for (HierarchyDependency dependency : hierarchyOrder.getDependencies()) {
-									out += "Partial Grafcet " + dependency.getInferior() + "\n Dependency: ";
-									out += StructuralConcurrencyAnalyzer.reachabilityConcurrencyAnalysis(dependency, false, true);
-									//FIXME: analyze if edges are parallel and add to heirarchy order
-								}
+								out += hierarchyOrder.analyzeReachabilityAndConcurrency();
 								Util.createOutputFile(out, target.getLocation().toString() + "/Result_Concurrency_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
 								
 								out = "\n\n Analysis cycles abstract Interpretation (24.02): \n";

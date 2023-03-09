@@ -24,14 +24,19 @@ public class HypergrafcetGenerator {
 	
 	
 	Grafcet grafcet;
+	HierarchyOrder hierarchyOrder;
 	Hypergraf hypergraf;
-	HierarchyOrder hierarchyOrder = new HierarchyOrder();
 	
 	
-	public HypergrafcetGenerator(Grafcet grafcet) {
+	public HypergrafcetGenerator(Grafcet grafcet, HierarchyOrder hierarchyOrder) {
 		super();
 		this.grafcet = grafcet;
-		hypergraf  = new Hypergraf(grafcet);
+		this.hierarchyOrder = hierarchyOrder;
+		hierarchyOrder.setHypergraf(new Hypergraf(grafcet));
+		hypergraf = hierarchyOrder.getHypergraf();
+	}
+	
+	public void generate() {
 		//generate Hypergrafcet and HirarcyDependencies regarding enclosings and forcings (i.e. HierarchyOrder according to Lesage et al.):
 		runInitialGeneration();
 
@@ -42,74 +47,6 @@ public class HypergrafcetGenerator {
 		addInitialDependenciesToHierarchyOrder();
 	}
 	
-	private void addActionTypesToVertices() {
-		for (Subgraf subgraf : hypergraf.getSubgrafs()) {
-			for (ActionType actionType : subgraf.getPartialGrafcet().getActionTypes()) {
-				for (ActionLink actionLink : subgraf.getPartialGrafcet().getActionLinks()) {
-					if (actionLink.getActionType() == actionType) {
-						if (actionType instanceof StoredAction) {
-							if (((StoredAction)actionType).getStoredActionType() == StoredActionType.DEACTIVATION) {
-								Vertex vertex = subgraf.getVertexFromStep(actionLink.getStep());
-								Set<Edge> downstreamEdges = subgraf.getDownstreamEdges(vertex);
-								for (Edge downstreamEdge : downstreamEdges) {
-									new ArrayList<>(downstreamEdge.getDownstream()).get(0).addActionType(actionType);
-								}
-							}else {
-								subgraf.getVertexFromStep(actionLink.getStep()).addActionType(actionType);
-							}
-						} else {
-							subgraf.getVertexFromStep(actionLink.getStep()).addActionType(actionType);
-						}
-					}
-				}
-			}
-		}
-	}
-	
-	public HierarchyOrder returnHierarchyOrder() {
-		hierarchyOrder.setHypergraf(hypergraf);
-		return  hierarchyOrder;
-	}
-	
-
-	
-	
-	
-	
-	
-	
-	/**
-	 * check HierarchOrder according to Lesage et al.:
-	 * @return
-	 */
-	public String checkHierarchyOrderForPartialOrder() {
-		//check for cycles
-		//calculate depth
-		return new String("Result of hierarchy check for partial order");
-	}
-	
-	
-	
-	
-	private void addInitialDependenciesToHierarchyOrder() {
-		for (Subgraf subgraf : hypergraf.getSubgrafs()) {
-			if (!subgraf.getInitialVertices().isEmpty()) {
-				//initalStep dependency: generate exactly one dependency even if a subgraf has multiple initial steps
-				hierarchyOrder.getDependencies().add(new HierarchyDependency(null, hypergraf, 
-						subgraf, InitializationType.initialStep));
-			}
-			//sourceTransition dependency: generate exactly one dependency even if a subgraf has multiple source transitions
-			if (!subgraf.getSourceEdges().isEmpty()) {
-				hierarchyOrder.getDependencies().add(new HierarchyDependency(null, hypergraf, 
-						subgraf, InitializationType.sourceTransition));
-			}
-			
-		}
-	}
-	
-
-
-
 	private void runInitialGeneration() {
 		//FIXME: So wie es ist l�uft es wohl, es werden nur keine MacroExpansions unterst�tzt, die zu zwei Makroschritten geh�ren
 		//daf�r m�sste hier wohl die Reihenfolge angepasst werden. Man m�sste mit den Edges starten. W�rde zu Art Worklist Algorithmus f�hren
@@ -140,6 +77,53 @@ public class HypergrafcetGenerator {
 			}
 		}
 	}
+	
+	private void addActionTypesToVertices() {
+		for (Subgraf subgraf : hypergraf.getSubgrafs()) {
+			for (ActionType actionType : subgraf.getPartialGrafcet().getActionTypes()) {
+				for (ActionLink actionLink : subgraf.getPartialGrafcet().getActionLinks()) {
+					if (actionLink.getActionType() == actionType) {
+						if (actionType instanceof StoredAction) {
+							if (((StoredAction)actionType).getStoredActionType() == StoredActionType.DEACTIVATION) {
+								Vertex vertex = subgraf.getVertexFromStep(actionLink.getStep());
+								Set<Edge> downstreamEdges = subgraf.getDownstreamEdges(vertex);
+								for (Edge downstreamEdge : downstreamEdges) {
+									new ArrayList<>(downstreamEdge.getDownstream()).get(0).addActionType(actionType);
+								}
+							}else {
+								subgraf.getVertexFromStep(actionLink.getStep()).addActionType(actionType);
+							}
+						} else {
+							subgraf.getVertexFromStep(actionLink.getStep()).addActionType(actionType);
+						}
+					}
+				}
+			}
+		}
+	}
+		
+	
+	
+	private void addInitialDependenciesToHierarchyOrder() {
+		for (Subgraf subgraf : hypergraf.getSubgrafs()) {
+			if (!subgraf.getInitialVertices().isEmpty()) {
+				//initalStep dependency: generate exactly one dependency even if a subgraf has multiple initial steps
+				hierarchyOrder.getDependencies().add(new HierarchyDependency(null, hypergraf, 
+						subgraf, InitializationType.initialStep));
+			}
+			//sourceTransition dependency: generate exactly one dependency even if a subgraf has multiple source transitions
+			if (!subgraf.getSourceEdges().isEmpty()) {
+				hierarchyOrder.getDependencies().add(new HierarchyDependency(null, hypergraf, 
+						subgraf, InitializationType.sourceTransition));
+			}
+			
+		}
+	}
+	
+
+
+
+
 	
 	/**
 	 * REQUIRE: step is step, enclosing step or exit/entry Step
