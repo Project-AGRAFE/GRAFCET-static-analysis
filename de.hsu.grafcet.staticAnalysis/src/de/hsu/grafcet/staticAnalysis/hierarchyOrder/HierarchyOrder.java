@@ -9,10 +9,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import apron.Abstract1;
+import apron.ApronException;
+import apron.Box;
+import apron.Environment;
 import de.hsu.grafcet.Grafcet;
 import de.hsu.grafcet.InitializableType;
 import de.hsu.grafcet.Step;
+import de.hsu.grafcet.staticAnalysis.abstInterpretation.RaceConditionDetecter;
+import de.hsu.grafcet.staticAnalysis.abstInterpretation.ThreadModAbstractInterpreter;
+import de.hsu.grafcet.staticAnalysis.hypergraf.Edge;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Hypergraf;
+import de.hsu.grafcet.staticAnalysis.hypergraf.Statement;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Subgraf;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Vertex;
 import de.hsu.grafcet.staticAnalysis.hypergrafTransromation.HypergrafcetGenerator;
@@ -26,6 +34,7 @@ public class HierarchyOrder {
 	private LinkedHashSet<ParallelDependency> parallelDependencies;
 	private LinkedHashSet<HierarchyDependency> dependencies = new LinkedHashSet<HierarchyDependency>();
 //	Map<Vertex, Set<Vertex>> concurrentVertices; //zu rechenintensiv? tbd ob das Sinn macht?
+	private ThreadModAbstractInterpreter tmai;
 
 	
 	public HierarchyOrder(Grafcet grafcet) {
@@ -37,6 +46,7 @@ public class HierarchyOrder {
 	
 	
 	/**
+	 * 
 	 * check HierarchOrder according to Lesage et al.:
 	 * @return
 	 */
@@ -55,8 +65,21 @@ public class HierarchyOrder {
 		return out;
 	}
 	
-	public void analyzeRecaConditions() {
-		
+	public void runAbstractInterpretation() throws ApronException {
+		tmai = new ThreadModAbstractInterpreter(this);
+		tmai.runAnalysis();
+	}
+	
+	public String getAIResult() {
+		return tmai.toString();
+	}
+	public String getAIFullLog() {
+		return tmai.getFullLog();
+	}
+	
+	public String analyzeRecaConditions() throws ApronException {
+		RaceConditionDetecter rcd = new RaceConditionDetecter(this);
+		return rcd.runAnalysis();
 	}
 	public void analyzeDeadlocks() {
 		
@@ -79,6 +102,56 @@ public class HierarchyOrder {
 		this.hypergraf = hypergraf;
 	}
 
+	public Environment getApronEnvironment() {
+		if (tmai == null) {
+			return null;
+		}
+		return this.tmai.getEnv();
+	}
+	/**
+	 * joins abstract environment for s for all including dependencies
+	 * @param s
+	 * @return
+	 * @throws ApronException 
+	 */
+	public Abstract1 getAbstract1FromStatement (Statement s) throws ApronException {
+		if (tmai == null) {
+			return null;
+		}
+		Abstract1 abs = new Abstract1(new Box(), getApronEnvironment(), true);
+		for (HierarchyDependency d : getContainingDependencies(s)) {
+			abs.join(new Box(), tmai.getAbstract1FromStatement(d, s));
+		}
+		
+		return abs;
+	}
+	
+	
+	/**
+	 * returns set of dependencies in which s is part of inferior subgraf
+	 * @param s
+	 * @return
+	 */
+	private Set<HierarchyDependency> getContainingDependencies(Statement s){
+		Set<HierarchyDependency> containingDependencies = new LinkedHashSet<HierarchyDependency>();
+		
+		if (s instanceof Vertex) {
+			for (HierarchyDependency d:  dependencies) {
+				if (d.getInferior().getVertices().contains(s)) {
+					containingDependencies.add(d);
+				}
+			}
+		} else if (s instanceof Edge) {
+			for (HierarchyDependency d:  dependencies) {
+				if (d.getInferior().getEdges().contains(s)) {
+					containingDependencies.add(d);
+				}
+			}
+		}
+		
+
+		return containingDependencies;
+	}
 	
 	/**
 	 * returns all concurrent vertices to @param vertex. 
@@ -100,10 +173,12 @@ public class HierarchyOrder {
 		Set<HierarchyDependency> containingDependencies = new LinkedHashSet<HierarchyDependency>();
 		Subgraf containingSubgraf = null;
 		
-		for (HierarchyDependency d:  dependencies) {
+		for (HierarchyDependency d: dependencies) {
 			if (d.getReachableVertices().contains(vertex)) {
-				concurrentSteps.addAll(d.getConcurrentVertices().get(vertex));
 				containingDependencies.add(d);
+				if (d.getConcurrentVertices().get(vertex) != null) {
+					concurrentSteps.addAll(d.getConcurrentVertices().get(vertex));
+				}
 				//concurrentSteps.add(d.getSuperiorTriggerVertex());
 				containingSubgraf = d.getInferior(); //sollte immer der selbe sein
 			}
@@ -213,15 +288,20 @@ public class HierarchyOrder {
 					pd.addDependency(d2);
 				}
 			}
-			parallelDependencies.add(pd);
+			if (!pd.getDependencies().isEmpty()) {
+				parallelDependencies.add(pd);
+				dependenciesCopy.removeAll(pd.getDependencies()); //um zu verhindern, dass parallel dependencies mehrfach hinzugefügt wird
+			}
 		}	
 		
 	}
 	
 	private boolean isParallel(HierarchyDependency d1, HierarchyDependency d2) {
 		for (HierarchyDependency d : dependencies) {
-			if (d.getReachableVertices().contains(d1.getSuperiorTriggerVertex()) && d.getReachableVertices().contains(d2.getSuperiorTriggerVertex())) {
-				if (d.getConcurrentVertices().get(d1.getSuperiorTriggerVertex()).contains(d2.getSuperiorTriggerVertex())) {
+			if (d.getReachableVertices().contains(d1.getSuperiorTriggerVertex()) 
+					&& d.getReachableVertices().contains(d2.getSuperiorTriggerVertex())) {
+				if (d.getConcurrentVertices().get(d1.getSuperiorTriggerVertex())
+						.contains(d2.getSuperiorTriggerVertex())) {
 					return true;
 				}
 			}

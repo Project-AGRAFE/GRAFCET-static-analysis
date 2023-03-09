@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 import apron.Abstract1;
 import apron.ApronException;
+import de.hsu.grafcet.staticAnalysis.hierarchyOrder.HierarchyOrder;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Edge;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Subgraf;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Vertex;
@@ -16,8 +17,9 @@ public class DeadlockDetecter {
 	//TODO Grafcet übergeben statt subgraf
 	
 	//FIXME Kozept so wie implementiert nicht sound. (siehe confluence)
+	//TODO SMT wird benötigt
 	
-	public static String checkDeadlocks (SequAbstractInterpreter ai) throws ApronException{
+	public static String checkDeadlocks (HierarchyOrder hierarchyOrder) throws ApronException{
 		String out = "Abstract interpretation based deadlock detection:";
 		boolean deadlockGlobal = false;
 		for (Subgraf subgraf : ai.getHypergraf().getSubgrafs()) {

@@ -20,7 +20,7 @@ public class TransferFunction {
 	Abstract1 interfaceEntry;
 	private boolean isInterface = false;
 	
-	private TransferFunction(Statement n, Abstract1 abstractValueN, Manager man, Environment env) throws ApronException {
+	public TransferFunction(Statement n, Abstract1 abstractValueN, Manager man, Environment env) throws ApronException {
 		super();
 		this.n = n;
 		this.abstractValueN = new Abstract1(man, abstractValueN);
@@ -49,8 +49,16 @@ public class TransferFunction {
 		return interfaceEntry;
 	}
 
+	/**
+	 * Statement n will be ignored. Instead term will be applied on abstractValueN set via constructor
+	 * @return
+	 * @throws ApronException 
+	 */
+	public Abstract1 transferTerm(Term term) throws ApronException{
+		return recusiveAbstrsactFromTermBuilder(term, abstractValueN, man, env);
+	}
 
-	public Abstract1 transfer() throws ApronException {
+	private Abstract1 transfer() throws ApronException {
 		Abstract1 copyabstractValueN = new Abstract1(man, abstractValueN);
 		if (n instanceof Edge) {
 			return transferEdge((Edge) n, copyabstractValueN, man, env);

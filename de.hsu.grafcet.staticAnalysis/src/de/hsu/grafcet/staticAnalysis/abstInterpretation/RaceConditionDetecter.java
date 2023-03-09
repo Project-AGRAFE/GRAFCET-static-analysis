@@ -3,22 +3,32 @@ package de.hsu.grafcet.staticAnalysis.abstInterpretation;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import apron.Abstract1;
+import apron.ApronException;
+import apron.Box;
+import apron.Environment;
+import apron.Manager;
 import de.hsu.grafcet.*;
+import de.hsu.grafcet.staticAnalysis.hierarchyOrder.HierarchyOrder;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Edge;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Hypergraf;
+import de.hsu.grafcet.staticAnalysis.hypergraf.Statement;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Subgraf;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Vertex;
 import terms.*;
 
 public class RaceConditionDetecter {
 
+	HierarchyOrder hierarchyOrder;
 	Hypergraf hyperGrafcet;
-	Set<Set<InitializableType>> setsOfConcurrentSteps; //assumed to be reachable //including Enclosing Steps
-	Set<Set<StepActionObject>> setsOfConcurrentActions;
+	//Set<Set<InitializableType>> setsOfConcurrentSteps; //assumed to be reachable //including Enclosing Steps
+	Set<Set<StepActionObject>> setsOfConcurrentActions; //TODO maps würden sich auch eignen mit key: varName
 	Set<List<StepActionObject>> setsOfConcurrentPairs;
 	Set<List<StepActionObject>> setsOfReceConditionPairs;
 	
@@ -29,15 +39,17 @@ public class RaceConditionDetecter {
 	 * @param setsOfConcurrentSteps: concrrent steps of hypergraf. Assumed to be reachable and indluding eclosing steps
 	 */
 	
-	public RaceConditionDetecter(Hypergraf hypergraf, Set<Set<InitializableType>> setsOfConcurrentSteps) {
-		this.hyperGrafcet = hypergraf;
-		this.setsOfConcurrentSteps = setsOfConcurrentSteps;
+	public RaceConditionDetecter(HierarchyOrder hierarchyOrder) {
+		this.hierarchyOrder = hierarchyOrder;
+		this.hyperGrafcet = hierarchyOrder.getHypergraf();
+		//this.setsOfConcurrentSteps = setsOfConcurrentSteps;
 	}
 	
-	public String runAnalysis() {
+	public String runAnalysis() throws ApronException{
 		identifyConcurrentActions();
 		checkConcurrencyOfAssociatedSteps();
 		checkTriggerConditions();
+		
 		if (setsOfReceConditionPairs.isEmpty()) {
 			return "No race conditions detected";
 		} else {
@@ -49,17 +61,26 @@ public class RaceConditionDetecter {
 		}
 	}
 	
-	private boolean isOverlapping(Term t1, Term t2) {
-		//FIXME
-	//APRON oder SMT?
-//		So eine Funktion auch für andere Stelle
-		return false;
+	private boolean isOverlapping(Term t1, Abstract1 abs1, Term t2, Abstract1 abs2) throws ApronException {
+		Manager man = new Box();
+		Environment env = hierarchyOrder.getApronEnvironment();
+		TransferFunction transfer1 = new TransferFunction(null, abs1, man, env);
+		TransferFunction transfer2 = new TransferFunction(null, abs2, man, env);
+		Abstract1 e1 = transfer1.transferTerm(t1);
+		Abstract1 e2 = transfer2.transferTerm(t2);
+		Abstract1 overlap = e1.meetCopy(man, e2);
+		if (overlap.isBottom(man)) {
+			return false;
+		} else {
+			return true;
+		}
 	}
 	
-	private boolean isRaceCondition(Set<Term> terms1, Set<Term> terms2) {
-		for (Term t1 : terms1) {
-			for (Term t2 : terms2) {
-				if (isOverlapping(t1, t2)) {
+	private boolean isRaceCondition(StepActionObject sa1, StepActionObject sa2) throws ApronException {
+		for (Statement s1 : sa1.getStatementTermMap().keySet()) {
+			for (Statement s2 : sa2.getStatementTermMap().keySet()) {
+				if (isOverlapping(sa1.getStatementTermMap().get(s1),hierarchyOrder.getAbstract1FromStatement(s1),
+						sa2.getStatementTermMap().get(s2),hierarchyOrder.getAbstract1FromStatement(s2))) {
 					return true; //not every possibility is checked
 				}
 			}
@@ -67,10 +88,10 @@ public class RaceConditionDetecter {
 		return false;
 	}
 	
-	private void checkTriggerConditions() {
+	private void checkTriggerConditions() throws ApronException{
 		setsOfReceConditionPairs = new HashSet<List<StepActionObject>>();
 		for (List<StepActionObject> pair : setsOfConcurrentPairs) {
-			if (isRaceCondition(pair.get(0).getTriggerinTerms(), pair.get(1).getTriggerinTerms())) {
+			if (isRaceCondition(pair.get(0), pair.get(1))) {
 				setsOfReceConditionPairs.add(pair);
 			}
 		}
@@ -102,11 +123,14 @@ public class RaceConditionDetecter {
 		setsOfConcurrentPairs = new HashSet<List<StepActionObject>>();
 		for (Set<StepActionObject> concurrentActions : setsOfConcurrentActions) {
 			for (List<StepActionObject> pair : getSetOfPairs(concurrentActions)) {
-				for (Set<InitializableType> concurrentSteps : setsOfConcurrentSteps) {
-					if (concurrentSteps.contains(pair.get(0).getStep()) && concurrentSteps.contains(pair.get(1).getStep()) ) {
-						setsOfConcurrentPairs.add(pair);
-					}
+				if (hierarchyOrder.getConcurrentSteps(pair.get(0).getVertex()).contains(pair.get(1).getVertex()) ) { //TODO wenn die Werte, die hier in der Methode berechnet werde, gespeichert werden würden, könnte Rechen Zeit gespart werden (aber modellgröße steigt)
+					setsOfConcurrentPairs.add(pair);
 				}
+//				for (Set<InitializableType> concurrentSteps : setsOfConcurrentSteps) {
+//					if (concurrentSteps.contains(pair.get(0).getStep()) && concurrentSteps.contains(pair.get(1).getStep()) ) {
+//						setsOfConcurrentPairs.add(pair);
+//					}
+//				}
 				
 			}
 		}
@@ -142,9 +166,9 @@ public class RaceConditionDetecter {
 	
 	
 	private class StepActionObject {
-		private Step step;
 		private StoredAction action;
-		private Set<Term> triggerinTerms = new HashSet<Term>();
+		//private Set<Edge> triggeringEdges = new HashSet<Edge>();
+		private Map<Statement, Term> statementTermMap = new HashMap<Statement, Term>();
 		private Vertex vertex;
 		
 		public StepActionObject(Vertex vertex, StoredAction action) {
@@ -171,18 +195,18 @@ public class RaceConditionDetecter {
 			switch (action.getStoredActionType()) {
 			case ACTIVATION: {
 				for (Edge e : hyperGrafcet.getUpstreamEdges(vertex)) {
-					triggerinTerms.add(e.getTransition().getTerm());
+					statementTermMap.put(e, e.getTransition().getTerm());
 				}
 				break;
 			}
 			case DEACTIVATION:{
 				for (Edge e : hyperGrafcet.getDownstreamEdges(vertex)) {
-					triggerinTerms.add(e.getTransition().getTerm());
+					statementTermMap.put(e, e.getTransition().getTerm());
 				}
 				break;
 			}
 			case EVENT:{
-				triggerinTerms.add(action.getTerm());
+				statementTermMap.put(vertex, action.getTerm());
 				break;
 			}
 			default:
@@ -193,11 +217,11 @@ public class RaceConditionDetecter {
 		public StoredAction getAction() {
 			return action;
 		}
-		public Step getStep() {
-			return step;
+		public Vertex getVertex() {
+			return vertex;
 		}
-		public Set<Term> getTriggerinTerms() {
-			return triggerinTerms;
+		public Map<Statement, Term> getStatementTermMap(){
+			return statementTermMap;
 		}
 	}
 }

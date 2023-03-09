@@ -30,9 +30,11 @@ public class ThreadModAbstractInterpreter {
 	Set<VariableDeclaration> variableDeclarationSet = new LinkedHashSet<VariableDeclaration>();
 	String fullLog = "";
 	
-	//TEST:
 	public Environment getEnv() {
 		return env;
+	}
+	public Abstract1 getAbstract1FromStatement(HierarchyDependency d, Statement s) {
+		return abstResultsHypergrafMap.get(d).get(s);
 	}
 	
 	
@@ -83,7 +85,7 @@ public class ThreadModAbstractInterpreter {
 		} while (!Util.equalsInterface(man, interfaceMap, copyInterfaceMap));
 	}
 	
-	public String getOut() {
+	public String getFullLog() {
 		return fullLog;
 	}
 	

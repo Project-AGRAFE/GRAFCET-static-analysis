@@ -87,22 +87,17 @@ public class RunAbstractInterpretation implements IObjectActionDelegate{
 								out += hierarchyOrder.analyzeReachabilityAndConcurrency();
 								Util.createOutputFile(out, target.getLocation().toString() + "/Result_Concurrency_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
 								
-								out = "\n\n Analysis cycles abstract Interpretation (24.02): \n";
-								ThreadModAbstractInterpreter tai = new ThreadModAbstractInterpreter(hierarchyOrder);
-								tai.runAnalysis();
-								out += tai.toString();
-//								System.out.println(out);
+								out = "\n\n Analysis cycles abstract Interpretation: \n";
+								hierarchyOrder.runAbstractInterpretation();
+								out += hierarchyOrder.getAIResult();
 								out += "\n\n\n\n\n ######## full log: ##########  \n #############################\n";
-								out += tai.getOut();
-//								
-//								SequAbstractInterpreter ai = new SequAbstractInterpreter(hierarchyOrder.getHypergraf());
-//								out += ai.sequentialAbstractInterpretation();
+								out += hierarchyOrder.getAIFullLog();
 								Util.createOutputFile(out, target.getLocation().toString() + "/Result_AI_raw_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
 								
 								
 								out = "\n\n Verification results abstract Interpretation: \n";
 								//TODO call methods for properties like Deadlocks
-//								out += DeadlockDetecter.checkDeadlocks(ai);
+								out += hierarchyOrder.analyzeRecaConditions();
 								
 								Util.createOutputFile(out, target.getLocation().toString() + "/Result_AI_veri_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
 								
