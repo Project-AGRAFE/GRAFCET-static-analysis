@@ -84,12 +84,25 @@ public class RunAbstractInterpretation implements IObjectActionDelegate{
 								HierarchyOrder hierarchyOrder = new HierarchyOrder((Grafcet)res.getContents().get(0));
 								
 								String out = "Concurrency Analysis: \n";
+								long s1 = System.currentTimeMillis();
 								out += hierarchyOrder.analyzeReachabilityAndConcurrency();
+								long s2 = System.currentTimeMillis();
+								out += "\n\n\n\n global concurrent steps:\n\n" + hierarchyOrder.getAllConcurrentStepsString();
+								long s3= System.currentTimeMillis();
+								long r1= s2 - s1;
+								long r2 = s3 - s2;
+								out += "\n\n\n\n + Time in ms (local/global): " + r1 + " / " + r2;
 								Util.createOutputFile(out, target.getLocation().toString() + "/Result_Concurrency_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
 								
 								out = "\n\n Analysis cycles abstract Interpretation: \n";
+								
+								long start = System.currentTimeMillis();
 								hierarchyOrder.runAbstractInterpretation();
 								out += hierarchyOrder.getAIResult();
+								long end = System.currentTimeMillis();
+								long result = end- start;
+								System.out.println( result + " ms for interference analysis");
+								
 								out += "\n\n\n\n\n ######## full log: ##########  \n #############################\n";
 								out += hierarchyOrder.getAIFullLog();
 								Util.createOutputFile(out, target.getLocation().toString() + "/Result_AI_raw_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");

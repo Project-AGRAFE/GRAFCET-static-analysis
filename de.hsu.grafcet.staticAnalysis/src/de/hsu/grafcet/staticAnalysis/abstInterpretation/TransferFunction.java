@@ -45,6 +45,11 @@ public class TransferFunction {
 		}
 	}
 
+	
+	/**
+	 * returns abstract value after a corresponding vertex with an associated action is executed, null otherwise
+	 * @return
+	 */
 	public Abstract1 getInterfaceEntry() {
 		return interfaceEntry;
 	}
@@ -138,7 +143,9 @@ public class TransferFunction {
 		} else if (term instanceof Equality && !manageableEquality) {
 			throw new NotImplementedException();
 		} else {
-			throw new IllegalArgumentException("Case not covered");
+			//throw new IllegalArgumentException("Case not covered");
+			//term might be null if not set
+			out = abstractValueN.meetCopy(man, new Abstract1(man, env));
 		}
 		return out;
 	}
@@ -226,7 +233,6 @@ public class TransferFunction {
 		return abstractValueN;
 	}
 	
-	//TODO TESTen bitte (plus Aufruf)
 	private void setInterfaceEntry(Statement n, String keepValueVar, Abstract1 abstractValueN) throws ApronException {
 		
 		

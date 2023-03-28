@@ -2,6 +2,7 @@ package de.hsu.grafcet.staticAnalysis.hierarchyOrder;
 
 import java.awt.event.HierarchyEvent;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -151,6 +152,29 @@ public class HierarchyOrder {
 		
 
 		return containingDependencies;
+	}
+	
+	public String getAllConcurrentStepsString() {
+		String out = "";
+		Map<Vertex, Set<Vertex>> concrrentStepMap = getAllConcurrentSteps();
+		for (Vertex v : concrrentStepMap.keySet()) {
+			out += v + ":  " + concrrentStepMap.get(v) + "\n";
+		}
+		return out;
+	}
+	
+	public Map<Vertex, Set<Vertex>> getAllConcurrentSteps(){
+		Map<Vertex, Set<Vertex>> concrrentStepMap = new HashMap<Vertex, Set<Vertex>>();
+		for (Subgraf s : this.hypergraf.getSubgrafs()) {
+			for (Vertex v : s.getVertices()) {
+				concrrentStepMap.put(v, null);
+			}
+		}
+		for (Vertex v : concrrentStepMap.keySet()) {
+			concrrentStepMap.put(v, getConcurrentSteps(v));
+		}
+		return concrrentStepMap;
+		
 	}
 	
 	/**

@@ -5,15 +5,37 @@ import java.util.HashMap;
 import java.util.Map;
 
 import apron.*;
+import de.hsu.grafcet.Grafcet;
 import de.hsu.grafcet.staticAnalysis.abstInterpretation.Util;
+import de.hsu.grafcet.staticAnalysis.hierarchyOrder.HierarchyOrder;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Statement;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Vertex;
 
 public class Main {
 
 	public static void main(String[] args) throws ApronException {
+		System.out.println("variables/actions; loops; length ; time in ms; number of statements");
 		
-		createPartialAbstract1ForInterface();
+		for (int i = 300; i <= 400; i = i + 50) {
+			int loops = 1;
+			int length = 25;
+			int actions = i;
+			
+			GrafcetTestInstanceGenerator gtig = new GrafcetTestInstanceGenerator();
+			gtig.addPGwLoops(loops, length);
+			gtig.addStoredActions(actions);
+			Grafcet g = gtig.getGrafcet();
+			
+			HierarchyOrder ho = new HierarchyOrder(g);
+			long start = System.currentTimeMillis();
+			ho.runAbstractInterpretation();
+			long end = System.currentTimeMillis();
+			//System.out.println(ho.getAIFullLog());
+			long result = end- start;
+			System.out.println((actions + loops) + "; " + loops + "; " + length + "; " + result + "; "+ loops * (2 + length * 4));
+		}
+		
+		//createPartialAbstract1ForInterface();
 		
 		//For testing APRON:
 		//Test.testDomain(new Box());
