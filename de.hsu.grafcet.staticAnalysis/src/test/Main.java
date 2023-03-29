@@ -14,6 +14,21 @@ import de.hsu.grafcet.staticAnalysis.hypergraf.Vertex;
 public class Main {
 
 	public static void main(String[] args) throws ApronException {
+
+		
+		//createPartialAbstract1ForInterface();
+		
+		//For testing APRON:
+		//Test.testDomain(new Box());
+//		minimalApronExample();
+		
+		//abstract0Bug();
+
+	}
+	
+
+	public static void scalabilityTest() throws ApronException {
+		
 		System.out.println("variables/actions; loops; length ; time in ms; number of statements");
 		
 		for (int i = 300; i <= 400; i = i + 50) {
@@ -34,18 +49,8 @@ public class Main {
 			long result = end- start;
 			System.out.println((actions + loops) + "; " + loops + "; " + length + "; " + result + "; "+ loops * (2 + length * 4));
 		}
-		
-		//createPartialAbstract1ForInterface();
-		
-		//For testing APRON:
-		//Test.testDomain(new Box());
-//		minimalApronExample();
-		
-		//abstract0Bug();
-
 	}
 	
-
 	
 	public static void abstract0Bug() throws ApronException{
 		Manager man = new Box();

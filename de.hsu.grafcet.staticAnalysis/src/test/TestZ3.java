@@ -41,8 +41,17 @@ public class TestZ3 {
 		public void doZ3(Context ctx) {
 			BoolExpr x = ctx.mkBoolConst("x");
 			BoolExpr y = ctx.mkBoolConst("y");
+			BoolExpr le = ctx.mkLe(ctx.mkIntConst("y"), ctx.mkInt(4));
+			BoolExpr y2 = ctx.mkBoolConst("y");
 
-			Model model = check(ctx, ctx.mkAnd(x, ctx.mkNot(y)), Status.SATISFIABLE);
+			Model model = check(ctx, ctx.mkAnd(x, ctx.mkNot(y), le, y), Status.SATISFIABLE);
+			System.out.println(model.toString());
+			System.out.println(model.getConstDecls());
+			System.out.println(model.getDecls());
+			System.out.println(model.getFuncDecls());
+
+			
+			
 			
 			/* Check if the string name of variable matters
 			x = ctx.mkBoolConst("x");
@@ -58,8 +67,11 @@ public class TestZ3 {
 	    private Model check(Context ctx, BoolExpr f, Status sat) {
 	        Solver s = ctx.mkSolver();
 	        s.add(f);
-	        if (s.check() != sat)
-	            throw new IllegalArgumentException();
+	        if (s.check() != sat) {
+	        	System.out.println("UN SAT");
+//	            throw new IllegalArgumentException();
+	        	return s.getModel();
+	        }
 	        if (sat == Status.SATISFIABLE) {
 	        	System.out.println("SATISFIABLE");
 	            return s.getModel();

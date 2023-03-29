@@ -115,7 +115,7 @@ public class HierarchyOrder {
 	 * @return
 	 * @throws ApronException 
 	 */
-	public Abstract1 getAbstract1FromStatement (Statement s) throws ApronException {
+	public Abstract1 getAbstract1FromStatementJoin (Statement s) throws ApronException {
 		if (tmai == null) {
 			return null;
 		}
@@ -127,6 +127,19 @@ public class HierarchyOrder {
 		return abs;
 	}
 	
+	/**
+	 * returns the abstract value before s is executed; calculation is based on the intitial situation induced by d
+	 * @param d dependeny inducing the intial situation
+	 * @param s statement (vertex or edge)
+	 * @return abstracted variable values
+	 */
+	public Abstract1 getAbstract1FromStatement (HierarchyDependency d, Statement s) {
+		return tmai.getAbstract1FromStatement(d, s);
+	}
+	
+	public Environment getEnv() {
+		return tmai.getEnv();
+	}
 	
 	/**
 	 * returns set of dependencies in which s is part of inferior subgraf
