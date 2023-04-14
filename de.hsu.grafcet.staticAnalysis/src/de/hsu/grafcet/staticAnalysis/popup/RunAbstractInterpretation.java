@@ -35,7 +35,6 @@ import apron.Manager;
 import de.hsu.grafcet.*;
 import de.hsu.grafcet.staticAnalysis.abstInterpretation.SequAbstractInterpreter;
 import de.hsu.grafcet.staticAnalysis.abstInterpretation.ThreadModAbstractInterpreter;
-import de.hsu.grafcet.staticAnalysis.abstInterpretation.DeadlockDetecter;
 import de.hsu.grafcet.staticAnalysis.abstInterpretation.RaceConditionDetecter;
 import de.hsu.grafcet.staticAnalysis.hierarchyOrder.HierarchyDependency;
 import de.hsu.grafcet.staticAnalysis.hierarchyOrder.HierarchyOrder;

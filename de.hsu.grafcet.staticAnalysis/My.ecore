@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="ASCII"?>
+<grafcet:Grafcet xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:grafcet="http://www.example.org/grafcet" xmlns:terms="http://www.example.org/terms">
+  <variableDeclarationContainer>
+    <variableDeclarations name="l1" variableDeclarationType="internal">
+      <sort xsi:type="terms:Integer"/>
+    </variableDeclarations>
+  </variableDeclarationContainer>
+  <partialGrafcets xsi:type="grafcet:PartialGrafcet">
+    <steps xsi:type="grafcet:Step" id="101" initial="true"/>
+    <steps xsi:type="grafcet:Step" id="102"/>
+    <steps xsi:type="grafcet:Step" id="103"/>
+    <transitions id="101"/>
+    <transitions id="102"/>
+    <transitions id="103"/>
+    <arcs source="//@partialGrafcets.0/@steps.0" target="//@partialGrafcets.0/@transitions.0"/>
+    <arcs source="//@partialGrafcets.0/@transitions.0" target="//@partialGrafcets.0/@steps.1"/>
+    <arcs source="//@partialGrafcets.0/@steps.1" target="//@partialGrafcets.0/@transitions.1"/>
+    <arcs source="//@partialGrafcets.0/@transitions.1" target="//@partialGrafcets.0/@steps.2"/>
+    <arcs source="//@partialGrafcets.0/@steps.2" target="//@partialGrafcets.0/@transitions.2"/>
+    <arcs source="//@partialGrafcets.0/@transitions.2" target="//@partialGrafcets.0/@steps.0"/>
+    <actionTypes xsi:type="grafcet:StoredAction">
+      <variable variableDeclaration="//@variableDeclarationContainer/@variableDeclarations.0"/>
+      <value xsi:type="terms:Addition">
+        <subterm xsi:type="terms:Variable" variableDeclaration="//@variableDeclarationContainer/@variableDeclarations.0"/>
+        <subterm xsi:type="terms:IntegerConstant" value="1"/>
+      </value>
+    </actionTypes>
+    <actionLinks step="//@partialGrafcets.0/@steps.0" actionType="//@partialGrafcets.0/@actionTypes.0"/>
+  </partialGrafcets>
+</grafcet:Grafcet>
