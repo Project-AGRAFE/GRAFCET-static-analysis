@@ -1,8 +1,11 @@
 package de.hsu.grafcet.staticAnalysis.abstInterpretation;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -126,13 +129,8 @@ public class Util {
 				} catch (ApronException e) {
 					e.printStackTrace();
 				}
-			}
-			
-		}
-		
-		
-
-	
+			}	
+		}	
 		return out;
 	}
 	
@@ -143,6 +141,34 @@ public class Util {
 			out += obj[i] + "\t";
 		}
 		return out;
+	}
+	
+	/**
+	 * Returns a set of lists that contain two items of the provided set. All possible combinations are provided.
+	 * @param <T>
+	 * @param set
+	 * @return
+	 */
+	public static <T> Set<List<T>> getSetOfPairs(Set<T> set){
+		if (set.size() == 2) {
+			return Collections.singleton(new ArrayList<>(set));
+		} else if (set.size() < 2) {
+			throw new IllegalArgumentException("set size is less than 2");
+		}
+		Set<List<T>> setOfPairs = new HashSet<List<T>>();
+		Set<T> visited = new HashSet<T>();
+		for (T t1 : set) {
+			Set<T> remaining = new HashSet<T>(set);
+			visited.add(t1);
+			remaining.removeAll(visited);
+			for (T t2 : remaining) {
+				List<T> pair = new ArrayList<T>();
+				pair.add(t1);
+				pair.add(t2);
+				setOfPairs.add(pair);
+			}
+		}
+		return setOfPairs;
 	}
 	
 	

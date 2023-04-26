@@ -41,19 +41,45 @@ import de.hsu.grafcet.staticAnalysis.hypergraf.Subgraf;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Vertex;
 import terms.*;
 
-//TODO untested :)
+public class FlawedTransitionDetecter extends Detecter{
 
-public class TransitionAnalyzer {
-	private Manager man;
-	private Environment env;
-	private HierarchyOrder hierarchyOrder;
 	private String result = "";
 	
-	public TransitionAnalyzer(HierarchyOrder hierarchyOrder) {
-		super();
-		this.man = new Box();
-		this.env = hierarchyOrder.getApronEnvironment();
-		this.hierarchyOrder = hierarchyOrder;
+	public FlawedTransitionDetecter(HierarchyOrder hierarchyOrder) {
+		super(hierarchyOrder);
+	}
+	
+	
+	@Override
+	public void runAnalysis() throws ApronException {
+		for (HierarchyDependency dependency: hierarchyOrder.getDependencies()) {
+			for (Edge edge : dependency.getInferior().getEdges()) {
+				if (detectAlwaysFiring(edge.getTransition().getTerm(), hierarchyOrder.getAbstract1FromStatementAndDependency(dependency, edge))) {
+					result += "\nERROR: Transition " + edge.getId() + " always fires."; 
+				}
+				if (detectNonFiring(edge.getTransition().getTerm(), hierarchyOrder.getAbstract1FromStatementAndDependency(dependency, edge))) {
+					result += "\nERROR: Transition " + edge.getId() + " never fires."; 
+				}
+			}
+			//detect possible deadlock or livelocks due to internal variables
+			for (Vertex vertex : dependency.getInferior().getVertices()) {
+				List<Edge> downstreamEdges = new ArrayList<Edge>(dependency.getInferior().getDownstreamEdges(vertex));
+				List<Term> terms = new ArrayList<Term>();
+				for(Edge edge : downstreamEdges) {
+					terms.add(edge.getTransition().getTerm());
+				}
+				Model model = null;
+				checkSatisfiabilityDisjunction(terms, hierarchyOrder.getAbstract1FromStatementAndDependency(dependency, downstreamEdges.get(0)), model);
+				if (model != null) {
+					result += "\nWARNING: Downstream transition(s) after step " + vertex.getId() + " do(es) not cover the internal variable values";
+				}
+			}
+		}
+	}
+
+	@Override
+	public String getResults() {
+		return result;
 	}
 	
 	private boolean detectNonFiring(Term term, Abstract1 absValueN) throws ApronException {
@@ -74,35 +100,8 @@ public class TransitionAnalyzer {
 		return false;
 	}
 		
-	public void analyzeTransitions() throws ApronException {
-		for (HierarchyDependency dependency: hierarchyOrder.getDependencies()) {
-			for (Edge edge : dependency.getInferior().getEdges()) {
-				if (detectAlwaysFiring(edge.getTransition().getTerm(), hierarchyOrder.getAbstract1FromStatement(dependency, edge))) {
-					result += "\nERROR: Transition " + edge.getId() + " always fires."; 
-				}
-				if (detectNonFiring(edge.getTransition().getTerm(), hierarchyOrder.getAbstract1FromStatement(dependency, edge))) {
-					result += "\nERROR: Transition " + edge.getId() + " never fires."; 
-				}
-			}
-		}
-	}
 	
-	public void analyzeInternalVariables() throws ApronException {
-		for (HierarchyDependency dependency: hierarchyOrder.getDependencies()) {
-			for (Vertex vertex : dependency.getInferior().getVertices()) {
-				List<Edge> downstreamEdges = new ArrayList<Edge>(dependency.getInferior().getDownstreamEdges(vertex));
-				List<Term> terms = new ArrayList<Term>();
-				for(Edge edge : downstreamEdges) {
-					terms.add(edge.getTransition().getTerm());
-				}
-				Model model = null;
-				checkSatisfiabilityDisjunction(terms, hierarchyOrder.getAbstract1FromStatement(dependency, downstreamEdges.get(0)), model);
-				if (model != null) {
-					result += "\nWARNING: Downstream transition(s) after step " + vertex.getId() + " do(es) not cover the internal variable values";
-				}
-			}
-		}
-	}
+	
 	
 	/*
 	public static String checkDeadlocks (HierarchyOrder hierarchyOrder) throws ApronException{
@@ -424,7 +423,6 @@ public class TransitionAnalyzer {
 
 		return ((Operator) term).getSubterm().get(index);
 
-	}
-	
+	}	
 	
 }

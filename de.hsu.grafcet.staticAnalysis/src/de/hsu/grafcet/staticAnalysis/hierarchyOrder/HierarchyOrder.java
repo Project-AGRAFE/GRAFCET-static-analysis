@@ -17,8 +17,12 @@ import apron.Environment;
 import de.hsu.grafcet.Grafcet;
 import de.hsu.grafcet.InitializableType;
 import de.hsu.grafcet.Step;
+import de.hsu.grafcet.staticAnalysis.abstInterpretation.Detecter;
+import de.hsu.grafcet.staticAnalysis.abstInterpretation.FlawedTransitionDetecter;
+import de.hsu.grafcet.staticAnalysis.abstInterpretation.HierarchicalConflictDetecter;
 import de.hsu.grafcet.staticAnalysis.abstInterpretation.RaceConditionDetecter;
 import de.hsu.grafcet.staticAnalysis.abstInterpretation.ThreadModAbstractInterpreter;
+import de.hsu.grafcet.staticAnalysis.abstInterpretation.TransientRunDetecter;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Edge;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Hypergraf;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Statement;
@@ -44,8 +48,6 @@ public class HierarchyOrder {
 		hg.generate();		
 	}	
 	
-	
-	
 	/**
 	 * 
 	 * check HierarchOrder according to Lesage et al.:
@@ -54,7 +56,7 @@ public class HierarchyOrder {
 	public String analyzeHierarchyOrderForPartialOrder() {
 		//check for cycles
 		//calculate depth
-		return new String("Result of hierarchy check for partial order");
+		return new String("not implemented");
 	}
 	
 	public String analyzeReachabilityAndConcurrency() {
@@ -78,16 +80,24 @@ public class HierarchyOrder {
 		return tmai.getFullLog();
 	}
 	
-	public String analyzeRecaConditions() throws ApronException {
-		RaceConditionDetecter rcd = new RaceConditionDetecter(this);
-		return rcd.runAnalysis();
-	}
-	public void analyzeDeadlocks() {
+	public String verifyProperties() throws ApronException {
+		String out = "";
+		Set<Detecter> detecters = new HashSet<Detecter>();
+		RaceConditionDetecter raceConditionD = new RaceConditionDetecter(this);
+		detecters.add(raceConditionD);
+		HierarchicalConflictDetecter hierarchicalConflictD = new HierarchicalConflictDetecter(this);
+		detecters.add(hierarchicalConflictD);
+		FlawedTransitionDetecter flawedTransitionD = new FlawedTransitionDetecter(this);
+		detecters.add(flawedTransitionD);
+		TransientRunDetecter transientRunD = new TransientRunDetecter(this);
+		detecters.add(transientRunD);
 		
-	}
-	
-	
-	
+		for (Detecter d : detecters) {
+			d.runAnalysis();
+			out += d.getResults();
+		}
+		return out;
+	}	
 	
 	public LinkedHashSet<HierarchyDependency> getDependencies() {
 		return dependencies;
@@ -128,12 +138,26 @@ public class HierarchyOrder {
 	}
 	
 	/**
+	 * returns the abstract value before s is executed, joined for all hierarchical dependencies
+	 * @param s statement (vertex or edge)
+	 * @return abstracted variable values
+	 */
+	
+	public Abstract1 getAbstract1FromStatement(Statement s) throws ApronException {
+		Abstract1 abstract1 = new Abstract1(new Box(), tmai.getEnv(), true);
+		for (HierarchyDependency d : this.getDependencies()){
+			abstract1.join(new Box(), tmai.getAbstract1FromStatement(d, s));
+		}
+		return abstract1;
+	}
+	
+	/**
 	 * returns the abstract value before s is executed; calculation is based on the intitial situation induced by d
 	 * @param d dependeny inducing the intial situation
 	 * @param s statement (vertex or edge)
 	 * @return abstracted variable values
 	 */
-	public Abstract1 getAbstract1FromStatement (HierarchyDependency d, Statement s) {
+	public Abstract1 getAbstract1FromStatementAndDependency (HierarchyDependency d, Statement s) {
 		return tmai.getAbstract1FromStatement(d, s);
 	}
 	
@@ -268,7 +292,6 @@ public class HierarchyOrder {
 			concurrentSuperiorDependencies.addAll(getConcurrentDependencies(superiorDep));
 		}
 		
-		//TODO: Es reicht ein Set aus, wenn alles funktioniert
 		concurrentDirectDependencies.addAll(concurrentInferiorDep);
 		concurrentDirectDependencies.addAll(concurrentSuperiorDependencies);
 		return concurrentDirectDependencies;

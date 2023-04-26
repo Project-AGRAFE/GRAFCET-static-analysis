@@ -15,7 +15,9 @@ import apron.Box;
 import apron.Environment;
 import apron.Manager;
 import de.hsu.grafcet.*;
+import de.hsu.grafcet.staticAnalysis.hierarchyOrder.HierarchyDependency;
 import de.hsu.grafcet.staticAnalysis.hierarchyOrder.HierarchyOrder;
+import de.hsu.grafcet.staticAnalysis.hierarchyOrder.InitializationType;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Edge;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Hypergraf;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Statement;
@@ -23,11 +25,9 @@ import de.hsu.grafcet.staticAnalysis.hypergraf.Subgraf;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Vertex;
 import terms.*;
 
-public class RaceConditionDetecter {
+public class RaceConditionDetecter extends Detecter{
 
-	HierarchyOrder hierarchyOrder;
 	Hypergraf hyperGrafcet;
-	//Set<Set<InitializableType>> setsOfConcurrentSteps; //assumed to be reachable //including Enclosing Steps
 	Set<Set<StepActionObject>> setsOfConcurrentActions; //TODO maps würden sich auch eignen mit key: varName
 	Set<List<StepActionObject>> setsOfConcurrentPairs;
 	Set<List<StepActionObject>> setsOfReceConditionPairs;
@@ -40,16 +40,19 @@ public class RaceConditionDetecter {
 	 */
 	
 	public RaceConditionDetecter(HierarchyOrder hierarchyOrder) {
-		this.hierarchyOrder = hierarchyOrder;
+		super(hierarchyOrder);
 		this.hyperGrafcet = hierarchyOrder.getHypergraf();
-		//this.setsOfConcurrentSteps = setsOfConcurrentSteps;
 	}
 	
-	public String runAnalysis() throws ApronException{
+	@Override
+	public void runAnalysis() throws ApronException {
 		identifyConcurrentActions();
 		checkConcurrencyOfAssociatedSteps();
-		checkTriggerConditions();
-		
+		checkTriggerConditions();	
+	}
+
+	@Override
+	public String getResults() {
 		if (setsOfReceConditionPairs.isEmpty()) {
 			return "No race conditions detected";
 		} else {
@@ -60,6 +63,9 @@ public class RaceConditionDetecter {
 			return out;
 		}
 	}
+	
+	
+
 	
 	private boolean isOverlapping(Term t1, Abstract1 abs1, Term t2, Abstract1 abs2) throws ApronException {
 		Manager man = new Box();
@@ -88,6 +94,7 @@ public class RaceConditionDetecter {
 		return false;
 	}
 	
+	//check if triggering condition can be executed at the same time:
 	private void checkTriggerConditions() throws ApronException{
 		setsOfReceConditionPairs = new HashSet<List<StepActionObject>>();
 		for (List<StepActionObject> pair : setsOfConcurrentPairs) {
@@ -97,46 +104,23 @@ public class RaceConditionDetecter {
 		}
 	}
 	
-	private <T> Set<List<T>> getSetOfPairs(Set<T> set){
-		if (set.size() == 2) {
-			return Collections.singleton(new ArrayList<>(set)); // HashSet<List<T>>() {{ add( new ArrayList(set));}};
-		} else if (set.size() < 2) {
-			throw new IllegalArgumentException("set size is less than 2");
-		}
-		Set<List<T>> setOfPairs = new HashSet<List<T>>();
-		Set<T> visited = new HashSet<T>();
-		for (T t1 : set) {
-			Set<T> remaining = new HashSet<T>(set);
-			visited.add(t1);
-			remaining.removeAll(visited);
-			for (T t2 : remaining) {
-				List<T> pair = new ArrayList<T>();
-				pair.add(t1);
-				pair.add(t2);
-				setOfPairs.add(pair);
-			}
-		}
-		return setOfPairs;
-	}
 	
+	//check if associated steps can be (structurally) concurrent:
 	private void checkConcurrencyOfAssociatedSteps() {
 		setsOfConcurrentPairs = new HashSet<List<StepActionObject>>();
 		for (Set<StepActionObject> concurrentActions : setsOfConcurrentActions) {
-			for (List<StepActionObject> pair : getSetOfPairs(concurrentActions)) {
-				if (hierarchyOrder.getConcurrentSteps(pair.get(0).getVertex()).contains(pair.get(1).getVertex()) ) { //TODO wenn die Werte, die hier in der Methode berechnet werde, gespeichert werden würden, könnte Rechen Zeit gespart werden (aber modellgröße steigt)
+			for (List<StepActionObject> pair : Util.getSetOfPairs(concurrentActions)) {
+				if (hierarchyOrder.getConcurrentSteps(pair.get(0).getVertex()).contains(pair.get(1).getVertex()) ) { 
 					setsOfConcurrentPairs.add(pair);
-				}
-//				for (Set<InitializableType> concurrentSteps : setsOfConcurrentSteps) {
-//					if (concurrentSteps.contains(pair.get(0).getStep()) && concurrentSteps.contains(pair.get(1).getStep()) ) {
-//						setsOfConcurrentPairs.add(pair);
-//					}
-//				}
-				
+				}			
 			}
 		}
 	}
 	
+
+	
 	private void identifyConcurrentActions() {
+		//collect actions:
 		List<StepActionObject> storedActions = new ArrayList<StepActionObject>();
 		for (Subgraf pg : hyperGrafcet.getSubgrafs()) {
 			for (Vertex vertex : pg.getVertices()) {
@@ -146,8 +130,8 @@ public class RaceConditionDetecter {
 					}
 				}
 			}
-			
 		}
+		//collect actions that writhe the same variable:
 		setsOfConcurrentActions = new HashSet<Set<StepActionObject>>();
 		while (!storedActions.isEmpty()) {
 			Set<StepActionObject> concurrentActions = new HashSet<StepActionObject>();
@@ -179,17 +163,6 @@ public class RaceConditionDetecter {
 			this.vertex = vertex;
 			setTerms();
 		}
-		
-//		private void setAssociatedStep(){
-//			for (Subgraf pg : hyperGrafcet.getSubgrafs()) {
-//				for (ActionLink actionLink : pg.getPartialGrafcet().getActionLinks()) {
-//					if (actionLink.getActionType().equals(action)) {
-//						this.step = actionLink.getStep();
-//						return;
-//					}
-//				}
-//			}
-//		}
 		
 		private void setTerms() {
 			switch (action.getStoredActionType()) {

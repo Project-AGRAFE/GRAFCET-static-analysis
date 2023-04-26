@@ -109,7 +109,11 @@ public class RunAbstractInterpretation implements IObjectActionDelegate{
 								
 								out = "\n\n Verification results abstract Interpretation: \n";
 								//TODO call methods for properties like Deadlocks
+								start = System.currentTimeMillis();
 								out += hierarchyOrder.analyzeRecaConditions();
+								end = System.currentTimeMillis();
+								result = end- start;
+								System.out.println( result + " ms for race condition analysis");
 								
 								Util.createOutputFile(out, target.getLocation().toString() + "/Result_AI_veri_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
 								
