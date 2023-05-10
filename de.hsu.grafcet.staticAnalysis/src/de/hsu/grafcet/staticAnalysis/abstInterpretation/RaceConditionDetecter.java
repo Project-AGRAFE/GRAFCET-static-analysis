@@ -28,9 +28,9 @@ import terms.*;
 public class RaceConditionDetecter extends Detecter{
 
 	Hypergraf hyperGrafcet;
-	Set<Set<StepActionObject>> setsOfConcurrentActions; //TODO maps würden sich auch eignen mit key: varName
-	Set<List<StepActionObject>> setsOfConcurrentPairs;
-	Set<List<StepActionObject>> setsOfReceConditionPairs;
+	Set<Set<StepActionObject>> setsOfConcurrentActions = new HashSet<Set<StepActionObject>>();; //TODO maps würden sich auch eignen mit key: varName
+	Set<List<StepActionObject>> setsOfConcurrentPairs = new HashSet<List<StepActionObject>>();
+	Set<List<StepActionObject>> setsOfReceConditionPairs = new HashSet<List<StepActionObject>>();
 	
 
 	/**

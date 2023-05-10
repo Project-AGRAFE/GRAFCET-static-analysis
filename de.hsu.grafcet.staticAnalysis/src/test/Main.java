@@ -15,7 +15,9 @@ public class Main {
 
 	public static void main(String[] args) throws ApronException {
 
-		new TestXMISerilazation().testXMISerilization();
+		
+		ScalabilityTest.testScalabilityBasicVariable();
+//		new TestXMISerilazation().testXMISerilization();
 		
 		//createPartialAbstract1ForInterface();
 		

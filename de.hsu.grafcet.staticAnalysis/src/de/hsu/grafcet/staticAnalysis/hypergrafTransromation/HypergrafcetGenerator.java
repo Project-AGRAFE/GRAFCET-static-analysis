@@ -5,6 +5,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -60,11 +61,22 @@ public class HypergrafcetGenerator {
 		}
 		//Macrostepexpansions:
 		normalizeMacrosteps();
-		//Vertices and enclosed/forced dependencies of HierarchyOrder:
+		//Vertices:
 		for (Subgraf subgraf : hypergraf.getSubgrafs()) {
 			if(subgraf.getPartialGrafcet() != null) {
 				for (InitializableType step : subgraf.getPartialGrafcet().getSteps()) {
-					addVertexAndCorrespondingDependency(step, subgraf);
+					//add vertex:
+					Vertex vertex = new Vertex(step);
+					subgraf.getVertices().add(vertex);
+				} 
+			}
+		}
+		//dependencies of HierarchyOrder:
+		for (Subgraf subgraf : hypergraf.getSubgrafs()) {
+			if(subgraf.getPartialGrafcet() != null) {
+				for (Vertex vertex: subgraf.getVertices()) {
+					//add dependency:
+					addEnlcosingForcingDependency(vertex, subgraf);
 				} 
 			}
 		}
@@ -109,12 +121,12 @@ public class HypergrafcetGenerator {
 			if (!subgraf.getInitialVertices().isEmpty()) {
 				//initalStep dependency: generate exactly one dependency even if a subgraf has multiple initial steps
 				hierarchyOrder.getDependencies().add(new HierarchyDependency(null, hypergraf, 
-						subgraf, InitializationType.initialStep));
+						subgraf, InitializationType.initialStep, subgraf.getInitialVertices()));
 			}
 			//sourceTransition dependency: generate exactly one dependency even if a subgraf has multiple source transitions
 			if (!subgraf.getSourceEdges().isEmpty()) {
 				hierarchyOrder.getDependencies().add(new HierarchyDependency(null, hypergraf, 
-						subgraf, InitializationType.sourceTransition));
+						subgraf, InitializationType.sourceTransition, null));
 			}
 			
 		}
@@ -123,6 +135,41 @@ public class HypergrafcetGenerator {
 
 
 
+	private Set<Vertex> getActivationLinksFromEnclosing(Subgraf enclosedSG) {
+		Set<Vertex> initiallyActiveVertices = new HashSet<Vertex>();
+		for (Vertex vertex : enclosedSG.getVertices()) {
+			if (vertex.getStep() instanceof InitializableType) {
+				if (((InitializableType) vertex.getStep()).isActivationLink()) {
+					initiallyActiveVertices.add(vertex);
+				}
+			}
+		}
+		return initiallyActiveVertices;
+	}
+	
+	private Set<Vertex> getForcedSituation(ForcingOrder forcing, Subgraf forcedSG){
+		Set<Vertex> initiallyActiveVertices = new HashSet<Vertex>();
+		switch (forcing.getForcingOrderType()) {
+		case CURRENT_SITUATION: {
+			//abort analysis; analysis covered with one of the other possibilities
+			break;
+		} case EMPTY_SITUATION: {
+			//no steps reachable; except sourceTransitions are set
+			break;
+		} case EXPLICIT_SITUATION: {
+			for (InitializableType step : forcing.getForcedSteps()){
+				initiallyActiveVertices.add(forcedSG.getVertexFromStep(step));
+			}
+			break;
+		} case INITIAL_SITUATION: {
+			initiallyActiveVertices.addAll(forcedSG.getInitialVertices());
+			break;
+		}
+		default:
+			throw new IllegalArgumentException("Unexpected value: " + forcing.getForcingOrderType());
+		}
+		return initiallyActiveVertices;
+	}
 
 	
 	/**
@@ -130,31 +177,31 @@ public class HypergrafcetGenerator {
 	 * @param step
 	 * @param subgraf
 	 */
-	private void addVertexAndCorrespondingDependency(Node step, Subgraf subgraf) {
-		//add vertex:
-		Vertex vertex = new Vertex(step);
-		subgraf.getVertices().add(vertex);
+	private void addEnlcosingForcingDependency(Vertex vertex, Subgraf subgraf) {		
+		Node step = vertex.getStep();
 		//enclosed dependencies:
 		if(step instanceof EnclosingStep) {
 			//for all enclosed partial Grafcets 
 			for (PartialGrafcet enclosedPartialGrafcet : ((EnclosingStep)step).getPartialGrafcets()) {
 				// add edge
+				Subgraf enclosedSG = hypergraf.getSubgraf(enclosedPartialGrafcet); 
 				hierarchyOrder.getDependencies().add(new HierarchyDependency(vertex, subgraf, 
-						hypergraf.getSubgraf(enclosedPartialGrafcet), InitializationType.enclosed));
+						enclosedSG, InitializationType.enclosed, getActivationLinksFromEnclosing(enclosedSG)));
 			}
 		}
 		//forced dependency:
-		//TODO: alternative Implementierung: �ber ForcingOrders iterieren (nur wo?)
 		for (ActionLink actionLink : subgraf.getPartialGrafcet().getActionLinks()) {
 			if (actionLink.getStep().equals(step) && actionLink.getActionType() instanceof ForcingOrder) {
+				Subgraf forcedSG = hypergraf.getSubgraf(((ForcingOrder)actionLink.getActionType()).getPartialGrafcet());
 				hierarchyOrder.getDependencies().add(new HierarchyDependency(vertex, subgraf, 
-						hypergraf.getSubgraf(((ForcingOrder)actionLink.getActionType()).getPartialGrafcet()), InitializationType.forced));
+						forcedSG, InitializationType.forced, getForcedSituation((ForcingOrder)actionLink.getActionType(),forcedSG)));
 			}
 		}
 	}
 	
 	/**
 	 * REQUIRE: no nested Macrosteps
+	 * REQUIRE: Normalization of forcing orders or enclosing steps in expansion might not work since the hierarchical dependencies are not added properly
 	 */
 	private void normalizeMacrosteps() {
 		//collect macro steps:
@@ -204,7 +251,9 @@ public class HypergrafcetGenerator {
 				for (Macrostep macrostep : subgraf.getPartialGrafcet().getMacrosteps()) {
 					//normalize MacrostepExpansion according to Schumacher
 					for (InitializableType stepInME : macrostep.getExpansion().getSteps()) {
-						addVertexAndCorrespondingDependency(stepInME, subgraf);		//special case when a MacrstepExpansion contains a ForcingOrder or EnclosingStep
+						//addVertexAndCorrespondingDependency(stepInME, subgraf);		//special case when a MacrstepExpansion contains a ForcingOrder or EnclosingStep
+						Vertex vertex = new Vertex(stepInME);
+						subgraf.getVertices().add(vertex);
 					}
 					for (EntryStep entryStep : macrostep.getExpansion().getEntryStep()) {
 						subgraf.getVertices().add(new Vertex(entryStep));

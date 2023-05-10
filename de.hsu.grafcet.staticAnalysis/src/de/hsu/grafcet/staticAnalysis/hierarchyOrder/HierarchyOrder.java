@@ -60,11 +60,14 @@ public class HierarchyOrder {
 	}
 	
 	public String analyzeReachabilityAndConcurrency() {
-		String out = "";
+		String out = "Reachability and Concurrency analysis: \n\n";
 		for (HierarchyDependency dependency : dependencies) {
 			out += "Partial Grafcet " + dependency.getInferior() + "\n Dependency: ";
 			out += StructuralConcurrencyAnalyzer.reachabilityConcurrencyAnalysis(dependency, false, true);
 		}
+		
+		out += "\n\n global Concurrncy:\n";
+		out += getAllConcurrentStepsString();
 		return out;
 	}
 	
@@ -244,9 +247,15 @@ public class HierarchyOrder {
 				containingSubgraf = d.getInferior(); //sollte immer der selbe sein
 			}
 		}
-		if (containingDependencies.isEmpty() || containingSubgraf == null) {
-			throw new IllegalArgumentException("Vertex not included in Hierarchy-Order");
+		//if a step is not reachable (e.g., no incoming arc) --> Structural Design error
+		try {
+			if (containingDependencies.isEmpty() || containingSubgraf == null) {
+				throw new IllegalArgumentException("Vertex not included in Hierarchy-Order");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
+
 		//get concurrent dependencies
 		Set<HierarchyDependency> concurrentDependencies = new LinkedHashSet<HierarchyDependency>();
 		for (HierarchyDependency d : containingDependencies) {
@@ -360,9 +369,11 @@ public class HierarchyOrder {
 		for (HierarchyDependency d : dependencies) {
 			if (d.getReachableVertices().contains(d1.getSuperiorTriggerVertex()) 
 					&& d.getReachableVertices().contains(d2.getSuperiorTriggerVertex())) {
-				if (d.getConcurrentVertices().get(d1.getSuperiorTriggerVertex())
-						.contains(d2.getSuperiorTriggerVertex())) {
-					return true;
+				if(d.getConcurrentVertices().get(d1.getSuperiorTriggerVertex()) != null) {
+					if (d.getConcurrentVertices().get(d1.getSuperiorTriggerVertex())
+							.contains(d2.getSuperiorTriggerVertex())) {
+						return true;
+					}
 				}
 			}
 		}

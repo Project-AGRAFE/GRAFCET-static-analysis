@@ -31,12 +31,13 @@ public class HierarchyDependency{
 	
 	
 	public HierarchyDependency(Vertex superiorTriggerVertex,
-			ISubgraf superior, Subgraf inferior, InitializationType type) {
+			ISubgraf superior, Subgraf inferior, InitializationType type, Set<Vertex> initiallyActiveVertices ) {
 		this.superiorTriggerVertex = superiorTriggerVertex;
 		this.superior = superior;
 		this.inferior = inferior;
 		this.inferiorName = inferior.getPartialGrafcet().getName();
 		this.type = type;
+		this.initiallyActiveVertices = initiallyActiveVertices;
 	}
 
 	public Vertex getSuperiorTriggerVertex() {
@@ -100,6 +101,10 @@ public class HierarchyDependency{
 		}
 		return initiallyActiveVertices;
 	}
+	
+	/**
+	 * @deprecated
+	 */
 	private void setInitiallyActiveVertices() {
 		initiallyActiveVertices = new HashSet<Vertex>();
 		switch (this.getType()) {
@@ -144,7 +149,7 @@ public class HierarchyDependency{
 			throw new IllegalArgumentException("Unexpected value: " + this.getType());
 		}
 	}
-
+	
 	public String getInferiorName() {
 		return inferiorName;
 	}

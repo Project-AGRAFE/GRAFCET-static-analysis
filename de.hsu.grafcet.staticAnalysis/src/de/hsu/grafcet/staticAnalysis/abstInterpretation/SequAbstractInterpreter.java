@@ -130,7 +130,7 @@ public class SequAbstractInterpreter {
 		
 		long end = System.currentTimeMillis();
 		long result = end- start;
-		System.out.println( result + " ms for PG " + subgraf.getPartialGrafcet().getName());
+//		System.out.println( result + " ms for PG " + subgraf.getPartialGrafcet().getName());
 		
 		out += "\n" + Util.printAbstMap("termination - result", abstractEnvMap, env, man);
 		out += "\n" + "\n\n ----";

@@ -157,14 +157,19 @@ public class TransferFunction {
 		if ((var).getVariableDeclaration().getSort() instanceof Bool){
 			if ((var).getVariableDeclaration().getVariableDeclarationType().equals(VariableDeclarationType.INPUT)) {
 				out = new Abstract1(man, env);
-			} else {
+			} else if ((var).getVariableDeclaration().getVariableDeclarationType().equals(VariableDeclarationType.INTERNAL)){
 				Texpr1Node subTxprNode = new Texpr1BinNode(Texpr1BinNode.OP_SUB,
 						new Texpr1VarNode((var).getVariableDeclaration().getName()),
 						new Texpr1CstNode(new MpqScalar(val)));
 				Texpr1Intern subTxprInt = new Texpr1Intern(env, subTxprNode);
 				Tcons1 expr = new Tcons1(Tcons1.EQ, subTxprInt);
 				out = abstractEnv.meetCopy(man, expr);
+			} else if ((var).getVariableDeclaration().getVariableDeclarationType().equals(VariableDeclarationType.STEP)) {
+				throw new NotImplementedException();
+			} else {
+				throw new IllegalArgumentException("Variable of type " + (var).getVariableDeclaration().getVariableDeclarationType() + " not expected.");
 			}
+			
 		}else {
 			throw new IllegalArgumentException("incorrect syntax: " + var);
 		}

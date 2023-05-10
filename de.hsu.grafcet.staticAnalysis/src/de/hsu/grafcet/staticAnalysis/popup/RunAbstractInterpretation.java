@@ -35,6 +35,10 @@ import apron.Manager;
 import de.hsu.grafcet.*;
 import de.hsu.grafcet.staticAnalysis.abstInterpretation.SequAbstractInterpreter;
 import de.hsu.grafcet.staticAnalysis.abstInterpretation.ThreadModAbstractInterpreter;
+import de.hsu.grafcet.staticAnalysis.abstInterpretation.TransientRunDetecter;
+import de.hsu.grafcet.staticAnalysis.abstInterpretation.Detecter;
+import de.hsu.grafcet.staticAnalysis.abstInterpretation.FlawedTransitionDetecter;
+import de.hsu.grafcet.staticAnalysis.abstInterpretation.HierarchicalConflictDetecter;
 import de.hsu.grafcet.staticAnalysis.abstInterpretation.RaceConditionDetecter;
 import de.hsu.grafcet.staticAnalysis.hierarchyOrder.HierarchyDependency;
 import de.hsu.grafcet.staticAnalysis.hierarchyOrder.HierarchyOrder;
@@ -47,6 +51,7 @@ public class RunAbstractInterpretation implements IObjectActionDelegate{
 	protected List<IFile> files;	
 	private Grafcet selectedGrafcet;
 	private int analysis;
+	//private String message = "Checking was executed.";
 	
 	/**
 	 * @see IActionDelegate#run(IAction)
@@ -82,40 +87,31 @@ public class RunAbstractInterpretation implements IObjectActionDelegate{
 								
 								HierarchyOrder hierarchyOrder = new HierarchyOrder((Grafcet)res.getContents().get(0));
 								
-								String out = "Concurrency Analysis: \n";
-								long s1 = System.currentTimeMillis();
-								out += hierarchyOrder.analyzeReachabilityAndConcurrency();
-								long s2 = System.currentTimeMillis();
-								out += "\n\n\n\n global concurrent steps:\n\n" + hierarchyOrder.getAllConcurrentStepsString();
-								long s3= System.currentTimeMillis();
-								long r1= s2 - s1;
-								long r2 = s3 - s2;
-								out += "\n\n\n\n + Time in ms (local/global): " + r1 + " / " + r2;
-								Util.createOutputFile(out, target.getLocation().toString() + "/Result_Concurrency_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
+								String out1  = hierarchyOrder.analyzeReachabilityAndConcurrency();
+								Util.createOutputFile(out1 , target.getLocation().toString() + "/Result_Concurrency_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
 								
-								out = "\n\n Analysis cycles abstract Interpretation: \n";
-								
-								long start = System.currentTimeMillis();
+						
 								hierarchyOrder.runAbstractInterpretation();
-								out += hierarchyOrder.getAIResult();
-								long end = System.currentTimeMillis();
-								long result = end- start;
-								System.out.println( result + " ms for interference analysis");
+								String out2 = hierarchyOrder.getAIResult();
+								Util.createOutputFile(out2, target.getLocation().toString() + "/Result_AI_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
+								String out3 = hierarchyOrder.getAIFullLog();
+								Util.createOutputFile(out3, target.getLocation().toString() + "/Result_AI_fullLog_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
 								
-								out += "\n\n\n\n\n ######## full log: ##########  \n #############################\n";
-								out += hierarchyOrder.getAIFullLog();
-								Util.createOutputFile(out, target.getLocation().toString() + "/Result_AI_raw_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
+								Detecter transitions = new FlawedTransitionDetecter(hierarchyOrder);
+								Detecter hierConflicts = new HierarchicalConflictDetecter(hierarchyOrder);
+								Detecter raceConditions = new RaceConditionDetecter(hierarchyOrder);
+								Detecter transientRuns = new TransientRunDetecter(hierarchyOrder);
 								
-								
-								out = "\n\n Verification results abstract Interpretation: \n";
-								//TODO call methods for properties like Deadlocks
-								start = System.currentTimeMillis();
-								out += hierarchyOrder.analyzeRecaConditions();
-								end = System.currentTimeMillis();
-								result = end- start;
-								System.out.println( result + " ms for race condition analysis");
-								
-								Util.createOutputFile(out, target.getLocation().toString() + "/Result_AI_veri_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
+								transitions.runAnalysis();
+								hierConflicts.runAnalysis();
+								raceConditions.runAnalysis();
+								transientRuns.runAnalysis();
+
+								String out4 = transitions.getResults();
+								out4 += hierConflicts.getResults();
+								out4 += raceConditions.getResults();
+								out4 += transientRuns.getResults();								
+								Util.createOutputFile(out4, target.getLocation().toString() + "/Result_AI_veri_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
 								
 //								//TEST SACLING
 //								out = "";
@@ -140,13 +136,15 @@ public class RunAbstractInterpretation implements IObjectActionDelegate{
 								
 							} catch (ApronException e){
 								//TODO unschöne Implementierung, mit dem Error, da es nur in der einen Date ist. Müsste in allen anderen auch sein --> Methode auslagern
-								Util.createOutputFile("Error: " + e, target.getLocation().toString() + "/Result_AI_veri_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
+								//Util.createOutputFile("Error: " + e, target.getLocation().toString() + "/Result_AI_veri_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
+//								message = "ERROR please inspect console log";
 								e.printStackTrace();
 							} catch (Exception e) {
-								Util.createOutputFile("Error: " + e, target.getLocation().toString() + "/Result_AI_veri_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
+								//Util.createOutputFile("Error: " + e, target.getLocation().toString() + "/Result_AI_veri_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
 								e.printStackTrace();
+//								message = "ERROR please inspect console log";
 							}finally {
-								Util.createOutputFile("Error", target.getLocation().toString() + "/Result_AI_veri_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
+//								Util.createOutputFile("Error", target.getLocation().toString() + "/Result_AI_veri_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
 								model.getProject().refreshLocal(IResource.DEPTH_INFINITE, monitor);
 							}
 						}
