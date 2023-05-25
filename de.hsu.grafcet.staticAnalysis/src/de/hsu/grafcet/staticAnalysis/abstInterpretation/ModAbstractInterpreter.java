@@ -42,7 +42,7 @@ public class ModAbstractInterpreter {
 		super();
 		this.hierarchyOrder = hierarchyOrder;
 		this.hypergraf = hierarchyOrder.getHypergraf();
-		env = generateEnvironment(hypergraf, false);
+		env = Util.generateEnvironment(hypergraf, false);
 	}
 
 
@@ -99,28 +99,7 @@ public class ModAbstractInterpreter {
 		return absOut;
 	}
 	
-	/**
-	 * Bulids a String[] varnames from the output and internal variables of the Grafcet in hypergraf
-	 */
-	public static Environment generateEnvironment(Hypergraf hypergraf, boolean includingInputs) {
-		Set<VariableDeclaration> variableDeclarationSet = new LinkedHashSet<VariableDeclaration>();
-		for (VariableDeclaration var : hypergraf.getGlobalGrafcet().getVariableDeclarationContainer().getVariableDeclarations()) {
-			//collect internal and output variables
-			if (var.getVariableDeclarationType().equals(VariableDeclarationType.OUTPUT) 
-					|| var.getVariableDeclarationType().equals(VariableDeclarationType.INTERNAL)
-					|| (var.getVariableDeclarationType().equals(VariableDeclarationType.INPUT) && includingInputs)) {
-				
-				variableDeclarationSet.add(var);
-			}
-		}
-		String[] varNames = new String[variableDeclarationSet.size()];
-		int i = 0;
-		for (VariableDeclaration var : variableDeclarationSet) {
-			varNames[i] = var.getName();
-			i++;
-		}
-		return new Environment(varNames, new String[] {});
-	}
+
 	
 	
 	

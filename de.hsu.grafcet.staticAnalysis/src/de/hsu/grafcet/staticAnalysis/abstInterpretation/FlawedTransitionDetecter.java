@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.emf.ecore.EObject;
+
 import com.microsoft.z3.ArithExpr;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -25,14 +27,17 @@ import apron.Environment;
 import apron.Interval;
 import apron.Manager;
 import apron.MpqScalar;
+import apron.NotImplementedException;
 import apron.Tcons1;
 import apron.Texpr1BinNode;
 import apron.Texpr1CstNode;
 import apron.Texpr1Intern;
 import apron.Texpr1Node;
 import apron.Texpr1VarNode;
+import apron.Var;
 import de.hsu.grafcet.GrafcetFactory;
 import de.hsu.grafcet.Transition;
+import de.hsu.grafcet.VariableDeclarationContainer;
 import de.hsu.grafcet.staticAnalysis.hierarchyOrder.HierarchyDependency;
 import de.hsu.grafcet.staticAnalysis.hierarchyOrder.HierarchyOrder;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Edge;
@@ -48,18 +53,62 @@ public class FlawedTransitionDetecter extends Detecter{
 	
 	public FlawedTransitionDetecter(HierarchyOrder hierarchyOrder) {
 		super(hierarchyOrder);
-		env = ModAbstractInterpreter.generateEnvironment(this.hierarchyOrder.getHypergraf(), true); 
+		env = Util.generateEnvironment(this.hierarchyOrder.getHypergraf(), true); 
+		
+		
 	}
 	
+	/**
+	 * Since booleans are substituted to integers [0, 1] can be interpretated as top element.
+	 * The method substitutes every top element of boolean variables to [0, 1]
+	 * @param a abstract environment
+	 * @param vars variableDeclarationConatiner containing the variables in the Evironment of a 
+	 * @return substituted abstract environment a
+	 * @throws ApronException
+	 */
+	public static Abstract1 substituteTopBooleansTo01(Abstract1 a, VariableDeclarationContainer vars) throws ApronException {
+		for (Var v : a.getEnvironment().getIntVars()) {
+			String var = v.toString();
+			for (VariableDeclaration varDecl : vars.getVariableDeclarations() ) {
+				if (varDecl.getName().equals(var)) {
+					if(varDecl.getSort() instanceof Bool) {
+						int cmp = a.getBound(a.getCreationManager(), v).cmp(new Interval(0, 1));
+						//var in a contains [0, 1] || var in a = [0, 1]
+						if (cmp == 1 || cmp == 0) {
+							Texpr1Node texprNode = new Texpr1CstNode(new Interval(0,1));
+
+							Texpr1Intern texprIntern = new Texpr1Intern(a.getEnvironment(), texprNode);
+							a.assign(a.getCreationManager(), var, texprIntern, null);
+						}
+					}
+				}
+			}
+		}
+		return a;
+	}
+	
+	
+	private Abstract1 addInputsToEnvAndSubstitute(Abstract1 absValue) throws ApronException {
+		Abstract1 absValueNInputs = new Abstract1(man, absValue);
+//		System.out.println(Util.printAbst("absValueN", absValueNInputs, env, man));
+		absValueNInputs.changeEnvironment(man, env, false);
+//		System.out.println(Util.printAbst("absValueNInputs", absValueNInputs, env, man));
+		absValueNInputs = substituteTopBooleansTo01(absValueNInputs, this.hierarchyOrder.getHypergraf().getGlobalGrafcet().getVariableDeclarationContainer());
+//		System.out.println(Util.printAbst("absValueNInputs substituted to [0, 1]", absValueNInputs, env, man));
+		return absValueNInputs;
+	}
 	
 	@Override
 	public void runAnalysis() throws ApronException {
 		for (HierarchyDependency dependency: hierarchyOrder.getDependencies()) {
 			for (Edge edge : dependency.getInferior().getEdges()) {
-				if (detectAlwaysFiring(edge.getTransition().getTerm(), hierarchyOrder.getAbstract1FromStatementAndDependency(dependency, edge))) {
+				
+				Abstract1 absValueNInputs = addInputsToEnvAndSubstitute(hierarchyOrder.getAbstract1FromStatementAndDependency(dependency, edge));
+				
+				if (detectAlwaysFiring(edge.getTransition().getTerm(), absValueNInputs)) {
 					result += "\nERROR: Transition " + edge.getId() + " always fires."; 
 				}
-				if (detectNonFiring(edge.getTransition().getTerm(), hierarchyOrder.getAbstract1FromStatementAndDependency(dependency, edge))) {
+				if (detectNonFiring(edge.getTransition().getTerm(), absValueNInputs)) {
 					result += "\nERROR: Transition " + edge.getId() + " never fires."; 
 				}
 			}
@@ -72,7 +121,8 @@ public class FlawedTransitionDetecter extends Detecter{
 						terms.add(edge.getTransition().getTerm());
 					}
 					Model model = null;
-					checkSatisfiabilityDisjunction(terms, hierarchyOrder.getAbstract1FromStatementAndDependency(dependency, downstreamEdges.get(0)), model);
+					Abstract1 absValueNInputs = addInputsToEnvAndSubstitute(hierarchyOrder.getAbstract1FromStatementAndDependency(dependency, downstreamEdges.get(0)));
+					checkSatisfiabilityDisjunction(terms, absValueNInputs, model);
 					if (model != null) {
 						result += "\nWARNING: Downstream transition(s) after step " + vertex.getId() + " do(es) not cover the internal variable values";
 					}
@@ -96,14 +146,12 @@ public class FlawedTransitionDetecter extends Detecter{
 		return false;
 	}
 	
-	//TODO Inputvariablen werden nicht mitmodelliert, daher falscher Alarm.
-	//Lösung 1: Vorher checken, ob Inputvariablen vorhanden sind und nur checken, wenn keine Inputvariablen vorkommen. Ggf. unsound
-	//Lösung 2: Inputvariablen hier nachmodellieren --> Funktioniert nicht, da Evironment mit Ergebnissen aus Analyse nicht übereinstimmt
-	//Lösung 3: Inputvariablen von vornherein mitmodellieren.
-	private boolean detectAlwaysFiring(Term term, Abstract1 absValueN) throws ApronException {
-		TransferFunction trans = new TransferFunction(null, absValueN, new Box(), env);
+
+	private boolean detectAlwaysFiring(Term term, Abstract1 absValueNInputs) throws ApronException {
+		TransferFunction trans = new TransferFunction(null, absValueNInputs, new Box(), env);
+		trans.setModelInputVariabels(true);
 		Abstract1 result = trans.transferTerm(term);
-		if (absValueN.isIncluded(man, result)) { 
+		if (absValueNInputs.isIncluded(man, result)) { 
 			return true; //error detected
 		}
 		return false;
@@ -292,7 +340,7 @@ public class FlawedTransitionDetecter extends Detecter{
 	
 					}
 					return ctx.mkBoolConst(varName.toString());
-				}else if(((Variable)term).getVariableDeclaration().getSort() instanceof Bool) {
+				}else if(((Variable)term).getVariableDeclaration().getSort() instanceof Integer) {
 						// System.out.println(((Variable) term));
 						StringBuilder varName = new StringBuilder();
 						varName.append(((Variable) term).getVariableDeclaration().getName());
@@ -369,11 +417,12 @@ public class FlawedTransitionDetecter extends Detecter{
 
 					return ctx.mkBool(((BooleanConstant) term).isValue());
 
-				} else {
-					throw new IllegalArgumentException();
-//					throw new TermIdentificationFailedException(term);
-
-				}
+				} 
+//				else {
+//					throw new IllegalArgumentException();
+////					throw new TermIdentificationFailedException(term);
+//
+//				}
 
 //			} else 
 //		} else {
@@ -394,11 +443,11 @@ public class FlawedTransitionDetecter extends Detecter{
 //
 //				return ctx.mkIntConst(varName.toString());
 
-			} else if (term instanceof Operator) {
+//			} else if (term instanceof Operator) {
 
 				// System.out.println(((Operator) term));
 
-				if (term instanceof Addition) {
+				else if (term instanceof Addition) {
 
 					return ctx.mkAdd((ArithExpr) getTransitionTerm(getSubterm(term, 0), ctx, 0),
 							(ArithExpr) getTransitionTerm(getSubterm(term, 1), ctx, 0));

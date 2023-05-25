@@ -5,9 +5,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.eclipse.emf.ecore.EObject;
 
 import apron.Abstract1;
 import apron.ApronException;
@@ -30,7 +33,7 @@ public class RaceConditionDetecter extends Detecter{
 	Hypergraf hyperGrafcet;
 	Set<Set<StepActionObject>> setsOfConcurrentActions = new HashSet<Set<StepActionObject>>();; //TODO maps würden sich auch eignen mit key: varName
 	Set<List<StepActionObject>> setsOfConcurrentPairs = new HashSet<List<StepActionObject>>();
-	Set<List<StepActionObject>> setsOfReceConditionPairs = new HashSet<List<StepActionObject>>();
+	Set<List<StepActionObject>> setsOfRaceConditionPairs = new HashSet<List<StepActionObject>>();
 	
 
 	/**
@@ -53,11 +56,11 @@ public class RaceConditionDetecter extends Detecter{
 
 	@Override
 	public String getResults() {
-		if (setsOfReceConditionPairs.isEmpty()) {
+		if (setsOfRaceConditionPairs.isEmpty()) {
 			return "\n\n== Results RaceConditionDetecter: ==\nNo race conditions detected";
 		} else {
 			String out = "\n\n== Results RaceConditionDetecter: ==\nThe following race conditions were detected: \n";
-			for (List<StepActionObject> pair : setsOfReceConditionPairs) {
+			for (List<StepActionObject> pair : setsOfRaceConditionPairs) {
 				out += "Action " + pair.get(0).getAction() + " is in conflict with " + pair.get(1).getAction() + "\n";
 			}
 			return out;
@@ -73,13 +76,26 @@ public class RaceConditionDetecter extends Detecter{
 		TransferFunction transfer1 = new TransferFunction(null, abs1, man, env);
 		TransferFunction transfer2 = new TransferFunction(null, abs2, man, env);
 		Abstract1 e1 = transfer1.transferTerm(t1);
-		Abstract1 e2 = transfer2.transferTerm(t2);
+		Abstract1 e2 = transfer2.transferTerm(t2);		
 		Abstract1 overlap = e1.meetCopy(man, e2);
 		if (overlap.isBottom(man)) {
 			return false;
 		} else {
 			return true;
 		}
+	}
+	
+	private boolean checkTermForTrue(Term t) {
+		for (Iterator<EObject> terms = t.eAllContents(); 
+				terms.hasNext();) {
+			EObject term = terms.next();
+			if (term instanceof BooleanConstant) {
+				if(((BooleanConstant)term).isValue()) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 	
 	private boolean isRaceCondition(StepActionObject sa1, StepActionObject sa2) throws ApronException {
@@ -96,10 +112,9 @@ public class RaceConditionDetecter extends Detecter{
 	
 	//check if triggering condition can be executed at the same time:
 	private void checkTriggerConditions() throws ApronException{
-		setsOfReceConditionPairs = new HashSet<List<StepActionObject>>();
 		for (List<StepActionObject> pair : setsOfConcurrentPairs) {
 			if (isRaceCondition(pair.get(0), pair.get(1))) {
-				setsOfReceConditionPairs.add(pair);
+				setsOfRaceConditionPairs.add(pair);
 			}
 		}
 	}
@@ -109,10 +124,16 @@ public class RaceConditionDetecter extends Detecter{
 	private void checkConcurrencyOfAssociatedSteps() {
 		setsOfConcurrentPairs = new HashSet<List<StepActionObject>>();
 		for (Set<StepActionObject> concurrentActions : setsOfConcurrentActions) {
-			for (List<StepActionObject> pair : Util.getSetOfPairs(concurrentActions)) {
-				if (hierarchyOrder.getConcurrentSteps(pair.get(0).getVertex()).contains(pair.get(1).getVertex()) ) { 
+			for (List<StepActionObject> pair : Util.getSetOfPairs(concurrentActions)) {		
+				//check if steps concurrent:
+				if (hierarchyOrder.getConcurrentSteps(pair.get(0).getVertex()).contains(pair.get(1).getVertex())){ 
 					setsOfConcurrentPairs.add(pair);
-				}			
+				}	
+				//check if steps are the same:
+				if (pair.get(0).getVertex().equals(pair.get(1).getVertex())) {
+					setsOfRaceConditionPairs.add(pair);
+				}
+
 			}
 		}
 	}
@@ -152,6 +173,8 @@ public class RaceConditionDetecter extends Detecter{
 	private class StepActionObject {
 		private StoredAction action;
 		//private Set<Edge> triggeringEdges = new HashSet<Edge>();
+		//collects all terms that could trigger this Action
+		//Remember: activations by deactivation are already normalized
 		private Map<Statement, Term> statementTermMap = new HashMap<Statement, Term>();
 		private Vertex vertex;
 		
@@ -164,6 +187,7 @@ public class RaceConditionDetecter extends Detecter{
 			setTerms();
 		}
 		
+
 		private void setTerms() {
 			switch (action.getStoredActionType()) {
 			case ACTIVATION: {
@@ -172,8 +196,10 @@ public class RaceConditionDetecter extends Detecter{
 				}
 				break;
 			}
+			//Remember: activations by deactivation are already normalized
+			//treat like activation
 			case DEACTIVATION:{
-				for (Edge e : hyperGrafcet.getDownstreamEdges(vertex)) {
+				for (Edge e : hyperGrafcet.getUpstreamEdges(vertex)) {
 					statementTermMap.put(e, e.getTransition().getTerm());
 				}
 				break;

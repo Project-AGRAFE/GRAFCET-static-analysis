@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -16,9 +17,12 @@ import apron.Interval;
 import apron.Manager;
 import de.hsu.grafcet.staticAnalysis.hierarchyOrder.HierarchyDependency;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Edge;
+import de.hsu.grafcet.staticAnalysis.hypergraf.Hypergraf;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Statement;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Subgraf;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Vertex;
+import terms.VariableDeclaration;
+import terms.VariableDeclarationType;
 
 public class Util {
 
@@ -103,7 +107,12 @@ public class Util {
 			//throw new IllegalArgumentException("Different statements in interfaces. Comparing is not possible");
 		}
 	}
-	
+	//TODO Mit null testen
+	public static String printAbst (String caption, Abstract1 abstValue, Environment env, Manager man) {
+		Map<Statement, Abstract1> m = new HashMap<Statement, Abstract1>();
+		m.put(null, abstValue);
+		return printAbstMap(caption, m, env, man);
+	}
 	
 	public static String printAbstMap(String caption, Map<Statement, Abstract1> abstractEnvMap, Environment env, Manager man) {
 		int rowLength = 18;
@@ -169,6 +178,47 @@ public class Util {
 			}
 		}
 		return setOfPairs;
+	}
+	
+	
+	/**
+	 * Bulids a String[] varnames from the output and internal variables of the Grafcet in hypergraf
+	 */
+	public static Environment generateEnvironment(Hypergraf hypergraf, boolean includingInputs) {
+		Set<VariableDeclaration> variableDeclarationSet = new LinkedHashSet<VariableDeclaration>();
+		for (VariableDeclaration var : hypergraf.getGlobalGrafcet().getVariableDeclarationContainer().getVariableDeclarations()) {
+			//collect internal and output variables
+			if (var.getVariableDeclarationType().equals(VariableDeclarationType.OUTPUT) 
+					|| var.getVariableDeclarationType().equals(VariableDeclarationType.INTERNAL)
+					|| (var.getVariableDeclarationType().equals(VariableDeclarationType.INPUT) && includingInputs)) {
+				
+				variableDeclarationSet.add(var);
+			}
+		}
+		String[] varNames = new String[variableDeclarationSet.size()];
+		int i = 0;
+		for (VariableDeclaration var : variableDeclarationSet) {
+			varNames[i] = var.getName();
+			i++;
+		}
+		return new Environment(varNames, new String[] {});
+	}
+	
+	public static String[] getInputVars(Hypergraf h) {
+		Set<VariableDeclaration> variableDeclarationSet = new LinkedHashSet<VariableDeclaration>();
+		for (VariableDeclaration var : h.getGlobalGrafcet().getVariableDeclarationContainer().getVariableDeclarations()) {
+			//collect input variables
+			if (var.getVariableDeclarationType().equals(VariableDeclarationType.INPUT)) {
+				variableDeclarationSet.add(var);
+			}
+		}
+		String[] varNames = new String[variableDeclarationSet.size()];
+		int i = 0;
+		for (VariableDeclaration var : variableDeclarationSet) {
+			varNames[i] = var.getName();
+			i++;
+		}
+		return varNames;
 	}
 	
 	

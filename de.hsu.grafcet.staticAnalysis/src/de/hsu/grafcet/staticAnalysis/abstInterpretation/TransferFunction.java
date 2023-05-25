@@ -193,8 +193,10 @@ public class TransferFunction {
 						Texpr1Node texprNode;
 						if (((BooleanConstant)value).isValue()) {
 							texprNode = new Texpr1CstNode(new Interval(1,1));
+						} else if (!((BooleanConstant)value).isValue()) {
+							texprNode = new Texpr1CstNode(new Interval(0,0)); 
 						} else {
-							texprNode = new Texpr1CstNode(new Interval(0,0)); //TODO das funktioniert nicht. in else fallen alle anderen Fäll, wie x = a && b. Da kann man nicht einfach [0, 0] zuweisen
+							throw new NotImplementedException();
 						}
 						Texpr1Intern texprIntern = new Texpr1Intern(env, texprNode);
 						abstractValueN.assign(man, 
