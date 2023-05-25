@@ -40,13 +40,15 @@ import de.hsu.grafcet.staticAnalysis.hypergraf.Hypergraf;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Subgraf;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Vertex;
 import terms.*;
+import terms.Integer;
 
 public class FlawedTransitionDetecter extends Detecter{
 
-	private String result = "";
+	private String result = "\n\n== Results FlawedTransitionDetecter: ==";
 	
 	public FlawedTransitionDetecter(HierarchyOrder hierarchyOrder) {
 		super(hierarchyOrder);
+		env = ModAbstractInterpreter.generateEnvironment(this.hierarchyOrder.getHypergraf(), true); 
 	}
 	
 	
@@ -64,14 +66,16 @@ public class FlawedTransitionDetecter extends Detecter{
 			//detect possible deadlock or livelocks due to internal variables
 			for (Vertex vertex : dependency.getInferior().getVertices()) {
 				List<Edge> downstreamEdges = new ArrayList<Edge>(dependency.getInferior().getDownstreamEdges(vertex));
-				List<Term> terms = new ArrayList<Term>();
-				for(Edge edge : downstreamEdges) {
-					terms.add(edge.getTransition().getTerm());
-				}
-				Model model = null;
-				checkSatisfiabilityDisjunction(terms, hierarchyOrder.getAbstract1FromStatementAndDependency(dependency, downstreamEdges.get(0)), model);
-				if (model != null) {
-					result += "\nWARNING: Downstream transition(s) after step " + vertex.getId() + " do(es) not cover the internal variable values";
+				if(downstreamEdges.size() > 0) {
+					List<Term> terms = new ArrayList<Term>();
+					for(Edge edge : downstreamEdges) {
+						terms.add(edge.getTransition().getTerm());
+					}
+					Model model = null;
+					checkSatisfiabilityDisjunction(terms, hierarchyOrder.getAbstract1FromStatementAndDependency(dependency, downstreamEdges.get(0)), model);
+					if (model != null) {
+						result += "\nWARNING: Downstream transition(s) after step " + vertex.getId() + " do(es) not cover the internal variable values";
+					}
 				}
 			}
 		}
@@ -84,6 +88,7 @@ public class FlawedTransitionDetecter extends Detecter{
 	
 	private boolean detectNonFiring(Term term, Abstract1 absValueN) throws ApronException {
 		TransferFunction trans = new TransferFunction(null, absValueN, new Box(), env);
+		trans.setModelInputVariabels(true);
 		Abstract1 result = trans.transferTerm(term);
 		if (result.isBottom(man)) {
 			return true; //error detected
@@ -91,10 +96,14 @@ public class FlawedTransitionDetecter extends Detecter{
 		return false;
 	}
 	
+	//TODO Inputvariablen werden nicht mitmodelliert, daher falscher Alarm.
+	//Lösung 1: Vorher checken, ob Inputvariablen vorhanden sind und nur checken, wenn keine Inputvariablen vorkommen. Ggf. unsound
+	//Lösung 2: Inputvariablen hier nachmodellieren --> Funktioniert nicht, da Evironment mit Ergebnissen aus Analyse nicht übereinstimmt
+	//Lösung 3: Inputvariablen von vornherein mitmodellieren.
 	private boolean detectAlwaysFiring(Term term, Abstract1 absValueN) throws ApronException {
 		TransferFunction trans = new TransferFunction(null, absValueN, new Box(), env);
 		Abstract1 result = trans.transferTerm(term);
-		if (absValueN.isIncluded(man, result)) {
+		if (absValueN.isIncluded(man, result)) { 
 			return true; //error detected
 		}
 		return false;
@@ -198,7 +207,7 @@ public class FlawedTransitionDetecter extends Detecter{
 			BoolExpr z3term = ctx.mkNot((BoolExpr) getTransitionTerm(term, ctx, 0));
 			negatedTerms.add(z3term);
 		}
-		List<BoolExpr> boundsInternalVariables = getZ3BoundsFromAbstrValues(collectInternalVariables(), absValueN);
+		List<BoolExpr> boundsInternalVariables = getZ3BoundsFromAbstrValues(collectInternalVariables(), absValueN, ctx);
 //		Set<VariableDeclaration> varDecls = collectInternalVariables();
 				
 		BoolExpr disjunctionExpr = ctx.mkBool(true);
@@ -221,8 +230,7 @@ public class FlawedTransitionDetecter extends Detecter{
 		}
 		return variableDeclarationSet;
 	}
-	private List<BoolExpr> getZ3BoundsFromAbstrValues(Set<VariableDeclaration> varDecls, Abstract1 absValues) throws ApronException{
-		Context ctx = new Context();
+	private List<BoolExpr> getZ3BoundsFromAbstrValues(Set<VariableDeclaration> varDecls, Abstract1 absValues, Context ctx) throws ApronException{
 		List<BoolExpr> boundsInternalVariables = new ArrayList<BoolExpr>(); 
 		
 		for (VariableDeclaration varDecl : varDecls) {
@@ -267,23 +275,40 @@ public class FlawedTransitionDetecter extends Detecter{
 	
 	public Expr getTransitionTerm(Term term, Context ctx, java.lang.Integer sgnlEdge) {
 
-		terms.Sort sort = checkSort(term);
+//		terms.Sort sort = checkSort(term);
 
-		if (sort instanceof Bool) {
+//		if (sort instanceof Bool) {
 
 			if (term instanceof Variable) {
+				if(((Variable)term).getVariableDeclaration().getSort() instanceof Bool) {
+					StringBuilder varName = new StringBuilder();
+					varName.append(((Variable) term).getVariableDeclaration().getName());
+	
+					if (sgnlEdge > 0) {
+	
+						// Add marker to negation variable of signalEdge
+						varName.append("_");
+						varName.append(sgnlEdge.toString());
+	
+					}
+					return ctx.mkBoolConst(varName.toString());
+				}else if(((Variable)term).getVariableDeclaration().getSort() instanceof Bool) {
+						// System.out.println(((Variable) term));
+						StringBuilder varName = new StringBuilder();
+						varName.append(((Variable) term).getVariableDeclaration().getName());
 
-				StringBuilder varName = new StringBuilder();
-				varName.append(((Variable) term).getVariableDeclaration().getName());
+						if (sgnlEdge > 0) {
 
-				if (sgnlEdge > 0) {
+							// Add marker to negation variable of signalEdge
+							varName.append("_");
+							varName.append(sgnlEdge.toString());
 
-					// Add marker to negation variable of signalEdge
-					varName.append("_");
-					varName.append(sgnlEdge.toString());
+						}
 
+						return ctx.mkIntConst(varName.toString());
+				} else {
+					throw new IllegalArgumentException();
 				}
-				return ctx.mkBoolConst(varName.toString());
 
 			} else if (term instanceof Operator) {
 
@@ -313,7 +338,7 @@ public class FlawedTransitionDetecter extends Detecter{
 
 					} else {
 
-						return ctx.mkEq((ArithExpr) getTransitionTerm(getSubterm(term, 0), ctx, 0),
+						return ctx.mkEq((ArithExpr) getTransitionTerm(getSubterm(term, 0), ctx, 0),  
 								(ArithExpr) getTransitionTerm(getSubterm(term, 1), ctx, 0));
 
 					}
@@ -350,28 +375,24 @@ public class FlawedTransitionDetecter extends Detecter{
 
 				}
 
-			} else {
-				throw new IllegalArgumentException();
-//				throw new TermIdentificationFailedException(term);
+//			} else 
+//		} else {
 
-			}
-		} else {
-
-			if (term instanceof Variable) {
-
-				// System.out.println(((Variable) term));
-				StringBuilder varName = new StringBuilder();
-				varName.append(((Variable) term).getVariableDeclaration().getName());
-
-				if (sgnlEdge > 0) {
-
-					// Add marker to negation variable of signalEdge
-					varName.append("_");
-					varName.append(sgnlEdge.toString());
-
-				}
-
-				return ctx.mkIntConst(varName.toString());
+//			if (term instanceof Variable) {
+//
+//				// System.out.println(((Variable) term));
+//				StringBuilder varName = new StringBuilder();
+//				varName.append(((Variable) term).getVariableDeclaration().getName());
+//
+//				if (sgnlEdge > 0) {
+//
+//					// Add marker to negation variable of signalEdge
+//					varName.append("_");
+//					varName.append(sgnlEdge.toString());
+//
+//				}
+//
+//				return ctx.mkIntConst(varName.toString());
 
 			} else if (term instanceof Operator) {
 
@@ -407,7 +428,7 @@ public class FlawedTransitionDetecter extends Detecter{
 //				throw new TermIdentificationFailedException(term);
 
 			}
-		}
+//		}
 
 	}
 	public terms.Sort checkSort(Term term) {

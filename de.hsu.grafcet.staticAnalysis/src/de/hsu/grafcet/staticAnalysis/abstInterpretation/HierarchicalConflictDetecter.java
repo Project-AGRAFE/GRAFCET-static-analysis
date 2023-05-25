@@ -13,7 +13,7 @@ import de.hsu.grafcet.staticAnalysis.hypergraf.Subgraf;
 
 public class HierarchicalConflictDetecter extends Detecter{	
 
-	String result = "";
+	String result = "\n\n== Results HierarchicalConflictDetecter: ==";
 	
 	public HierarchicalConflictDetecter(HierarchyOrder hierarchyOrder) {
 		super(hierarchyOrder);
@@ -64,15 +64,15 @@ public class HierarchicalConflictDetecter extends Detecter{
 		}
 		
 		if (setsOfConcurrentPairs.isEmpty()) {
-			result = "No race conditions detected";
+			result += "\nNo race conditions detected";
 		} else {
-			String out = "The following conflicts between hierarchies were detected: \n";
+			String out = "\nThe following conflicts between hierarchies were detected: \n";
 			for (List<HierarchyDependency> pair : setsOfConcurrentPairs) {
 				out += "Hierarchy " + pair.get(0).getType() + " associated to step " + pair.get(0).getSuperiorTriggerVertex() + 
 						" is in conflict with " + pair.get(1).getType() + " associated to step " + pair.get(1).getSuperiorTriggerVertex() 
 						+ "\n";
 			}
-			result = out;
+			result += out;
 		}
 	}
 }

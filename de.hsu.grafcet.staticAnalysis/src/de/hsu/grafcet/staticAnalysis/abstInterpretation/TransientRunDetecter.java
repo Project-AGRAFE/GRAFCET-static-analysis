@@ -41,7 +41,7 @@ public class TransientRunDetecter extends Detecter{
 
 	@Override
 	public String getResults() {
-		String warning = "\n\n\n\n Detection of transient steps: \nCaution: Results might be unsound.\n";
+		String warning = "\n\n== Results TransientRunDetecter: ==\nCaution: Results might be unsound.\n";
 		String out = "No transient steps detected.";
 		if (!transientVertices.isEmpty()) {
 			out = "The following steps might be transient: " + transientVertices.toString();

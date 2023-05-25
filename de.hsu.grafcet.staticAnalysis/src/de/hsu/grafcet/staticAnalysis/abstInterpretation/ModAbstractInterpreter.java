@@ -18,7 +18,7 @@ import de.hsu.grafcet.staticAnalysis.hypergraf.Subgraf;
 import terms.VariableDeclaration;
 import terms.VariableDeclarationType;
 
-public class ThreadModAbstractInterpreter {
+public class ModAbstractInterpreter {
 
 	HierarchyOrder hierarchyOrder;
 	Hypergraf hypergraf;
@@ -26,8 +26,8 @@ public class ThreadModAbstractInterpreter {
 	Map<HierarchyDependency, Map<Statement, Abstract1>> abstResultsHypergrafMap = new HashMap<HierarchyDependency, Map<Statement, Abstract1>>(); 
 	Manager man = new Box();
 	Environment env;
-	String[] varNames;
-	Set<VariableDeclaration> variableDeclarationSet = new LinkedHashSet<VariableDeclaration>();
+//	String[] varNames;
+//	Set<VariableDeclaration> variableDeclarationSet = new LinkedHashSet<VariableDeclaration>();
 	String fullLog = "";
 	
 	public Environment getEnv() {
@@ -38,23 +38,23 @@ public class ThreadModAbstractInterpreter {
 	}
 	
 	
-	public ThreadModAbstractInterpreter(HierarchyOrder hierarchyOrder) {
+	public ModAbstractInterpreter(HierarchyOrder hierarchyOrder) {
 		super();
 		this.hierarchyOrder = hierarchyOrder;
 		this.hypergraf = hierarchyOrder.getHypergraf();
-		collectVariableNames();
+		env = generateEnvironment(hypergraf, false);
 	}
 
 
 	public void runAnalysis() throws ApronException {
-		threadModularAbstractInterpretation();
+		modularAbstractInterpretation();
 	}
 	
 	/**
 	 * Analysis is performed for every dependency (combination of subgraf and a initial situation).
 	 * @throws ApronException
 	 */
-	private void threadModularAbstractInterpretation() throws ApronException {
+	private void modularAbstractInterpretation() throws ApronException {
 		Map<HierarchyDependency, Map<Statement, Abstract1>>  copyInterfaceMap;
 		int iteration = 1;
 		do {
@@ -64,13 +64,7 @@ public class ThreadModAbstractInterpreter {
 			copyInterfaceMap = new HashMap<HierarchyDependency, Map<Statement, Abstract1>>(interfaceMap);
 			for (HierarchyDependency dependency : hierarchyOrder.getDependencies()) {
 				
-//				//For debugging:
-//				if (dependency.getInferiorName().equals("G0")){
-//					System.out.println(dependency.getInferiorName());
-//				}
-				
 				Abstract1 i = joinInterface(dependency, copyInterfaceMap);
-//				System.out.println("Dep. " + dependency.getInferiorName() +  ", Interface: " + i.getBound(man, "Station2_fertig"));
 				SequAbstractInterpreter seqAI = new SequAbstractInterpreter(dependency, man, env, i);
 				seqAI.runAnalysis();
 				abstResultsHypergrafMap.put(dependency, seqAI.getDeepcopyAbstractEnvMap());
@@ -84,6 +78,7 @@ public class ThreadModAbstractInterpreter {
 			}	
 		} while (!Util.equalsInterface(man, interfaceMap, copyInterfaceMap));
 	}
+
 	
 	public String getFullLog() {
 		return fullLog;
@@ -107,20 +102,24 @@ public class ThreadModAbstractInterpreter {
 	/**
 	 * Bulids a String[] varnames from the output and internal variables of the Grafcet in hypergraf
 	 */
-	private void collectVariableNames() {
+	public static Environment generateEnvironment(Hypergraf hypergraf, boolean includingInputs) {
+		Set<VariableDeclaration> variableDeclarationSet = new LinkedHashSet<VariableDeclaration>();
 		for (VariableDeclaration var : hypergraf.getGlobalGrafcet().getVariableDeclarationContainer().getVariableDeclarations()) {
 			//collect internal and output variables
-			if (var.getVariableDeclarationType().equals(VariableDeclarationType.OUTPUT) || var.getVariableDeclarationType().equals(VariableDeclarationType.INTERNAL)) {
+			if (var.getVariableDeclarationType().equals(VariableDeclarationType.OUTPUT) 
+					|| var.getVariableDeclarationType().equals(VariableDeclarationType.INTERNAL)
+					|| (var.getVariableDeclarationType().equals(VariableDeclarationType.INPUT) && includingInputs)) {
+				
 				variableDeclarationSet.add(var);
 			}
 		}
-		varNames = new String[variableDeclarationSet.size()];
+		String[] varNames = new String[variableDeclarationSet.size()];
 		int i = 0;
 		for (VariableDeclaration var : variableDeclarationSet) {
 			varNames[i] = var.getName();
 			i++;
 		}
-		env = new Environment(varNames, new String[] {});
+		return new Environment(varNames, new String[] {});
 	}
 	
 	

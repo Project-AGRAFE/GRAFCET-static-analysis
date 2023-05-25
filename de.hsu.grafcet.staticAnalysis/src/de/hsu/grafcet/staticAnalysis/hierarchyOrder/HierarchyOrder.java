@@ -21,7 +21,7 @@ import de.hsu.grafcet.staticAnalysis.abstInterpretation.Detecter;
 import de.hsu.grafcet.staticAnalysis.abstInterpretation.FlawedTransitionDetecter;
 import de.hsu.grafcet.staticAnalysis.abstInterpretation.HierarchicalConflictDetecter;
 import de.hsu.grafcet.staticAnalysis.abstInterpretation.RaceConditionDetecter;
-import de.hsu.grafcet.staticAnalysis.abstInterpretation.ThreadModAbstractInterpreter;
+import de.hsu.grafcet.staticAnalysis.abstInterpretation.ModAbstractInterpreter;
 import de.hsu.grafcet.staticAnalysis.abstInterpretation.TransientRunDetecter;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Edge;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Hypergraf;
@@ -39,7 +39,7 @@ public class HierarchyOrder {
 	private LinkedHashSet<ParallelDependency> parallelDependencies;
 	private LinkedHashSet<HierarchyDependency> dependencies = new LinkedHashSet<HierarchyDependency>();
 //	Map<Vertex, Set<Vertex>> concurrentVertices; //zu rechenintensiv? tbd ob das Sinn macht?
-	private ThreadModAbstractInterpreter tmai;
+	private ModAbstractInterpreter tmai;
 
 	
 	public HierarchyOrder(Grafcet grafcet) {
@@ -72,7 +72,7 @@ public class HierarchyOrder {
 	}
 	
 	public void runAbstractInterpretation() throws ApronException {
-		tmai = new ThreadModAbstractInterpreter(this);
+		tmai = new ModAbstractInterpreter(this);
 		tmai.runAnalysis();
 	}
 	

@@ -19,6 +19,10 @@ public class TransferFunction {
 	//Map<Statement, Abstract1> interfaceOut = new HashMap<Statement, Abstract1>(); //abstractEnv for every statement
 	Abstract1 interfaceEntry;
 	private boolean isInterface = false;
+	/**
+	 * normal impelementation returns top element if an input variable occurs. The flag returns the actual value. 
+	 */
+	private boolean modelInputVariabels = false;  
 	
 	public TransferFunction(Statement n, Abstract1 abstractValueN, Manager man, Environment env) throws ApronException {
 		super();
@@ -75,12 +79,12 @@ public class TransferFunction {
 	}
 	
 	
-	private static Abstract1 transferEdge(Edge n, Abstract1 abstractValueN, Manager man, Environment env) throws ApronException {
+	private Abstract1 transferEdge(Edge n, Abstract1 abstractValueN, Manager man, Environment env) throws ApronException {
 		Term term = n.getTransition().getTerm();
 		return  recusiveAbstrsactFromTermBuilder(term, abstractValueN, man, env);
 	}
 	
-	private static  Abstract1 recusiveAbstrsactFromTermBuilder(Term term, Abstract1 abstractValueN, Manager man, Environment env) throws ApronException {
+	private Abstract1 recusiveAbstrsactFromTermBuilder(Term term, Abstract1 abstractValueN, Manager man, Environment env) throws ApronException {
 		Abstract1 out;
 		
 		boolean manageableEquality = true;
@@ -150,14 +154,15 @@ public class TransferFunction {
 		return out;
 	}
 	
-	private static Abstract1 abstractEnvFromVariableExpr(Variable var, Abstract1 abstractEnv, boolean isNegated, Manager man, Environment env) throws ApronException {
+	private Abstract1 abstractEnvFromVariableExpr(Variable var, Abstract1 abstractEnv, boolean isNegated, Manager man, Environment env) throws ApronException {
 		Abstract1 out;
 		int val = 1;
 		if (isNegated) val = 0;
 		if ((var).getVariableDeclaration().getSort() instanceof Bool){
-			if ((var).getVariableDeclaration().getVariableDeclarationType().equals(VariableDeclarationType.INPUT)) {
+			if ((var).getVariableDeclaration().getVariableDeclarationType().equals(VariableDeclarationType.INPUT) && !modelInputVariabels) {
 				out = new Abstract1(man, env);
-			} else if ((var).getVariableDeclaration().getVariableDeclarationType().equals(VariableDeclarationType.INTERNAL)){
+			} else if ((var).getVariableDeclaration().getVariableDeclarationType().equals(VariableDeclarationType.INTERNAL) ||
+					((var).getVariableDeclaration().getVariableDeclarationType().equals(VariableDeclarationType.INPUT) && modelInputVariabels)){
 				Texpr1Node subTxprNode = new Texpr1BinNode(Texpr1BinNode.OP_SUB,
 						new Texpr1VarNode((var).getVariableDeclaration().getName()),
 						new Texpr1CstNode(new MpqScalar(val)));
@@ -272,9 +277,9 @@ public class TransferFunction {
 		
 	}
 	
-	private static Texpr1Node recursiveLinearExprBuilder(Term term) {
+	private Texpr1Node recursiveLinearExprBuilder(Term term) {
 		if (term instanceof Variable) {
-			if (((Variable)term).getVariableDeclaration().getVariableDeclarationType().equals(VariableDeclarationType.INPUT)) {
+			if (((Variable)term).getVariableDeclaration().getVariableDeclarationType().equals(VariableDeclarationType.INPUT) && !modelInputVariabels) {
 				MpfrScalar inf = new MpfrScalar();
 				MpfrScalar fin = new MpfrScalar();
 				inf.setInfty(1);
@@ -297,7 +302,7 @@ public class TransferFunction {
 		throw new IllegalArgumentException("incorrect syntax or error in algorithm");
 	}
 	
-	private static Tcons1 predicateConsBuilder(Operator pedicateOperator, Environment env) {
+	protected Tcons1 predicateConsBuilder(Operator pedicateOperator, Environment env) {
 		if (pedicateOperator instanceof GreaterThan) {
 			Texpr1Node subTxprNode = new Texpr1BinNode(Texpr1BinNode.OP_SUB,
 					recursiveLinearExprBuilder(pedicateOperator.getSubterm().get(0)),
@@ -323,4 +328,7 @@ public class TransferFunction {
 	}
 
 
+	public void setModelInputVariabels(boolean modelInputVariabels) {
+		this.modelInputVariabels = modelInputVariabels;
+	}
 }

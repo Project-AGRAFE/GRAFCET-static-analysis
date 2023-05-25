@@ -34,7 +34,7 @@ import apron.Box;
 import apron.Manager;
 import de.hsu.grafcet.*;
 import de.hsu.grafcet.staticAnalysis.abstInterpretation.SequAbstractInterpreter;
-import de.hsu.grafcet.staticAnalysis.abstInterpretation.ThreadModAbstractInterpreter;
+import de.hsu.grafcet.staticAnalysis.abstInterpretation.ModAbstractInterpreter;
 import de.hsu.grafcet.staticAnalysis.abstInterpretation.TransientRunDetecter;
 import de.hsu.grafcet.staticAnalysis.abstInterpretation.Detecter;
 import de.hsu.grafcet.staticAnalysis.abstInterpretation.FlawedTransitionDetecter;
@@ -51,7 +51,7 @@ public class RunAbstractInterpretation implements IObjectActionDelegate{
 	protected List<IFile> files;	
 	private Grafcet selectedGrafcet;
 	private int analysis;
-	//private String message = "Checking was executed.";
+	private String message = "Checking was executed.";
 	
 	/**
 	 * @see IActionDelegate#run(IAction)
@@ -86,63 +86,39 @@ public class RunAbstractInterpretation implements IObjectActionDelegate{
 								
 								
 								HierarchyOrder hierarchyOrder = new HierarchyOrder((Grafcet)res.getContents().get(0));
-								
-								String out1  = hierarchyOrder.analyzeReachabilityAndConcurrency();
-								Util.createOutputFile(out1 , target.getLocation().toString() + "/Result_Concurrency_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
-								
-						
-								hierarchyOrder.runAbstractInterpretation();
-								String out2 = hierarchyOrder.getAIResult();
-								Util.createOutputFile(out2, target.getLocation().toString() + "/Result_AI_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
-								String out3 = hierarchyOrder.getAIFullLog();
-								Util.createOutputFile(out3, target.getLocation().toString() + "/Result_AI_fullLog_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
-								
-								Detecter transitions = new FlawedTransitionDetecter(hierarchyOrder);
-								Detecter hierConflicts = new HierarchicalConflictDetecter(hierarchyOrder);
-								Detecter raceConditions = new RaceConditionDetecter(hierarchyOrder);
-								Detecter transientRuns = new TransientRunDetecter(hierarchyOrder);
-								
-								transitions.runAnalysis();
-								hierConflicts.runAnalysis();
-								raceConditions.runAnalysis();
-								transientRuns.runAnalysis();
+                                String out1  = hierarchyOrder.analyzeReachabilityAndConcurrency();
+                                Util.createOutputFile(out1 , target.getLocation().toString() + "/Result_Concurrency_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
+                                hierarchyOrder.runAbstractInterpretation();
+                                String out2 = hierarchyOrder.getAIResult();
+                                Util.createOutputFile(out2, target.getLocation().toString() + "/Result_AI_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
+                                String out3 = hierarchyOrder.getAIFullLog();
+                                Util.createOutputFile(out3, target.getLocation().toString() + "/Result_AI_fullLog_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
+                                
+                                Detecter transitions = new FlawedTransitionDetecter(hierarchyOrder);
+                                Detecter hierConflicts = new HierarchicalConflictDetecter(hierarchyOrder);
+                                Detecter raceConditions = new RaceConditionDetecter(hierarchyOrder);
+                                Detecter transientRuns = new TransientRunDetecter(hierarchyOrder);
 
-								String out4 = transitions.getResults();
-								out4 += hierConflicts.getResults();
-								out4 += raceConditions.getResults();
-								out4 += transientRuns.getResults();								
-								Util.createOutputFile(out4, target.getLocation().toString() + "/Result_AI_veri_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
-								
-//								//TEST SACLING
-//								out = "";
-//								
-//								long start = System.currentTimeMillis();
-//								tai = new ThreadModAbstractInterpreter(hierarchyOrder);
-//								tai.runAnalysis();
-//								long end = System.currentTimeMillis();
-//								long timeInMS = (end - start);
-//								out = "Compile-time multi-thread aproach (in ms): " + timeInMS;
-//								
-//								for (HierarchyDependency d : hierarchyOrder.getDependencies()) {
-//									SequAbstractInterpreter sai = new SequAbstractInterpreter(d, new Box(), tai.getEnv());
-//								}
-//								long end2 = System.currentTimeMillis();
-//								timeInMS = (end2- end);
-//								out += "\nCompile-time for all dependencies sequential ai aproach (in ms): " + timeInMS;
-//								
-//								Util.createOutputFile(out, target.getLocation().toString() + "/Result_AI_Scaling_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
-//								
-								
+                                transitions.runAnalysis();
+                                hierConflicts.runAnalysis();
+                                raceConditions.runAnalysis();
+                                transientRuns.runAnalysis();
+//
+                                String out4 = transitions.getResults();
+                                out4 += hierConflicts.getResults();
+                                out4 += raceConditions.getResults();
+                                out4 += transientRuns.getResults();                                                                
+                                Util.createOutputFile(out4, target.getLocation().toString() + "/Result_AI_veri_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt"); 
 								
 							} catch (ApronException e){
 								//TODO unschöne Implementierung, mit dem Error, da es nur in der einen Date ist. Müsste in allen anderen auch sein --> Methode auslagern
-								//Util.createOutputFile("Error: " + e, target.getLocation().toString() + "/Result_AI_veri_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
-//								message = "ERROR please inspect console log";
+//								Util.createOutputFile("Error: " + e, target.getLocation().toString() + "/Result_AI_veri_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
+								message = "ERROR: Please inspect console log for details.";
 								e.printStackTrace();
 							} catch (Exception e) {
-								//Util.createOutputFile("Error: " + e, target.getLocation().toString() + "/Result_AI_veri_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
+//								Util.createOutputFile("Error: " + e, target.getLocation().toString() + "/Result_AI_veri_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
+								message = "ERROR: Please inspect console log for details.";
 								e.printStackTrace();
-//								message = "ERROR please inspect console log";
 							}finally {
 //								Util.createOutputFile("Error", target.getLocation().toString() + "/Result_AI_veri_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
 								model.getProject().refreshLocal(IResource.DEPTH_INFINITE, monitor);
@@ -167,7 +143,7 @@ public class RunAbstractInterpretation implements IObjectActionDelegate{
 		MessageDialog.openInformation(
 				shell,
 				"Actions",
-				"Checking was executed.");
+				message);
 		
 	}
 	

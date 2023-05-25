@@ -54,9 +54,9 @@ public class RaceConditionDetecter extends Detecter{
 	@Override
 	public String getResults() {
 		if (setsOfReceConditionPairs.isEmpty()) {
-			return "No race conditions detected";
+			return "\n\n== Results RaceConditionDetecter: ==\nNo race conditions detected";
 		} else {
-			String out = "The following race conditions were detected: \n";
+			String out = "\n\n== Results RaceConditionDetecter: ==\nThe following race conditions were detected: \n";
 			for (List<StepActionObject> pair : setsOfReceConditionPairs) {
 				out += "Action " + pair.get(0).getAction() + " is in conflict with " + pair.get(1).getAction() + "\n";
 			}
