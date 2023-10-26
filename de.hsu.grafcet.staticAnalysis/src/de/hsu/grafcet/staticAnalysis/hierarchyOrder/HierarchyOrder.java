@@ -147,11 +147,15 @@ public class HierarchyOrder {
 	 */
 	
 	public Abstract1 getAbstract1FromStatement(Statement s) throws ApronException {
-		Abstract1 abstract1 = new Abstract1(new Box(), tmai.getEnv(), true);
+		Abstract1 abstract1join = new Abstract1(new Box(), tmai.getEnv(), true);
 		for (HierarchyDependency d : this.getDependencies()){
-			abstract1.join(new Box(), tmai.getAbstract1FromStatement(d, s));
+			Abstract1 abstract1 = tmai.getAbstract1FromStatement(d, s);
+			if (abstract1 != null) {
+				abstract1join.join(new Box(), abstract1);
+			}
+			
 		}
-		return abstract1;
+		return abstract1join;
 	}
 	
 	/**
@@ -250,7 +254,7 @@ public class HierarchyOrder {
 		//if a step is not reachable (e.g., no incoming arc) --> Structural Design error
 		try {
 			if (containingDependencies.isEmpty() || containingSubgraf == null) {
-				throw new IllegalArgumentException("Vertex not included in Hierarchy-Order");
+				throw new IllegalArgumentException("Vertex " + vertex + " not included in Hierarchy-Order (probably not reachable)");
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

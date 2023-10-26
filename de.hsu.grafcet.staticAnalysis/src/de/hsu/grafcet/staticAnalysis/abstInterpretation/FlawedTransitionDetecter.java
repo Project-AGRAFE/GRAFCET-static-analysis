@@ -58,52 +58,13 @@ public class FlawedTransitionDetecter extends Detecter{
 		
 	}
 	
-	/**
-	 * Since booleans are substituted to integers [0, 1] can be interpretated as top element.
-	 * The method substitutes every top element of boolean variables to [0, 1]
-	 * @param a abstract environment
-	 * @param vars variableDeclarationConatiner containing the variables in the Evironment of a 
-	 * @return substituted abstract environment a
-	 * @throws ApronException
-	 */
-	public static Abstract1 substituteTopBooleansTo01(Abstract1 a, VariableDeclarationContainer vars) throws ApronException {
-		for (Var v : a.getEnvironment().getIntVars()) {
-			String var = v.toString();
-			for (VariableDeclaration varDecl : vars.getVariableDeclarations() ) {
-				if (varDecl.getName().equals(var)) {
-					if(varDecl.getSort() instanceof Bool) {
-						int cmp = a.getBound(a.getCreationManager(), v).cmp(new Interval(0, 1));
-						//var in a contains [0, 1] || var in a = [0, 1]
-						if (cmp == 1 || cmp == 0) {
-							Texpr1Node texprNode = new Texpr1CstNode(new Interval(0,1));
-
-							Texpr1Intern texprIntern = new Texpr1Intern(a.getEnvironment(), texprNode);
-							a.assign(a.getCreationManager(), var, texprIntern, null);
-						}
-					}
-				}
-			}
-		}
-		return a;
-	}
-	
-	
-	private Abstract1 addInputsToEnvAndSubstitute(Abstract1 absValue) throws ApronException {
-		Abstract1 absValueNInputs = new Abstract1(man, absValue);
-//		System.out.println(Util.printAbst("absValueN", absValueNInputs, env, man));
-		absValueNInputs.changeEnvironment(man, env, false);
-//		System.out.println(Util.printAbst("absValueNInputs", absValueNInputs, env, man));
-		absValueNInputs = substituteTopBooleansTo01(absValueNInputs, this.hierarchyOrder.getHypergraf().getGlobalGrafcet().getVariableDeclarationContainer());
-//		System.out.println(Util.printAbst("absValueNInputs substituted to [0, 1]", absValueNInputs, env, man));
-		return absValueNInputs;
-	}
-	
 	@Override
 	public void runAnalysis() throws ApronException {
 		for (HierarchyDependency dependency: hierarchyOrder.getDependencies()) {
 			for (Edge edge : dependency.getInferior().getEdges()) {
 				
-				Abstract1 absValueNInputs = addInputsToEnvAndSubstitute(hierarchyOrder.getAbstract1FromStatementAndDependency(dependency, edge));
+				Abstract1 absValueNInputs = Util.addInputsToEnvAndSubstitute(hierarchyOrder.getAbstract1FromStatementAndDependency(dependency, edge), 
+						env, hierarchyOrder.getHypergraf().getGlobalGrafcet().getVariableDeclarationContainer());
 				
 				if (detectAlwaysFiring(edge.getTransition().getTerm(), absValueNInputs)) {
 					result += "\nERROR: Transition " + edge.getId() + " always fires."; 
@@ -121,7 +82,8 @@ public class FlawedTransitionDetecter extends Detecter{
 						terms.add(edge.getTransition().getTerm());
 					}
 					Model model = null;
-					Abstract1 absValueNInputs = addInputsToEnvAndSubstitute(hierarchyOrder.getAbstract1FromStatementAndDependency(dependency, downstreamEdges.get(0)));
+					Abstract1 absValueNInputs = Util.addInputsToEnvAndSubstitute(hierarchyOrder.getAbstract1FromStatementAndDependency(dependency, downstreamEdges.get(0)),
+							env, hierarchyOrder.getHypergraf().getGlobalGrafcet().getVariableDeclarationContainer());
 					checkSatisfiabilityDisjunction(terms, absValueNInputs, model);
 					if (model != null) {
 						result += "\nWARNING: Downstream transition(s) after step " + vertex.getId() + " do(es) not cover the internal variable values";

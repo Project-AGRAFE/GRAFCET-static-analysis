@@ -15,12 +15,18 @@ import apron.ApronException;
 import apron.Environment;
 import apron.Interval;
 import apron.Manager;
+import apron.Texpr1CstNode;
+import apron.Texpr1Intern;
+import apron.Texpr1Node;
+import apron.Var;
+import de.hsu.grafcet.VariableDeclarationContainer;
 import de.hsu.grafcet.staticAnalysis.hierarchyOrder.HierarchyDependency;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Edge;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Hypergraf;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Statement;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Subgraf;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Vertex;
+import terms.Bool;
 import terms.VariableDeclaration;
 import terms.VariableDeclarationType;
 
@@ -221,5 +227,53 @@ public class Util {
 		return varNames;
 	}
 	
+	
+	/**
+	 * Since booleans are substituted to integers [0, 1] can be interpretated as top element.
+	 * The method substitutes every top element of boolean variables to [0, 1]
+	 * @param a abstract environment
+	 * @param vars variableDeclarationConatiner containing the variables in the Evironment of a 
+	 * @return substituted abstract environment a
+	 * @throws ApronException
+	 */
+	public static Abstract1 substituteTopBooleansTo01(Abstract1 a, VariableDeclarationContainer vars) throws ApronException {
+		for (Var v : a.getEnvironment().getIntVars()) {
+			String var = v.toString();
+			for (VariableDeclaration varDecl : vars.getVariableDeclarations() ) {
+				if (varDecl.getName().equals(var)) {
+					if(varDecl.getSort() instanceof Bool) {
+						int cmp = a.getBound(a.getCreationManager(), v).cmp(new Interval(0, 1));
+						//var in a contains [0, 1] || var in a = [0, 1]
+						if (cmp == 1 || cmp == 0) {
+							Texpr1Node texprNode = new Texpr1CstNode(new Interval(0,1));
+
+							Texpr1Intern texprIntern = new Texpr1Intern(a.getEnvironment(), texprNode);
+							a.assign(a.getCreationManager(), var, texprIntern, null);
+						}
+					}
+				}
+			}
+		}
+		return a;
+	}
+	
+	/**
+	 * Changes the variables of the environment in absValue to nweEnv (using .changeEnvironment). New variables have the top element. 
+	 * Boolean top variables are substituted to [0, 1] using substituteTopBooleanTo01()
+	 * @param absValue
+	 * @param newEnv
+	 * @param varDeclCont
+	 * @return
+	 * @throws ApronException
+	 */
+	public static Abstract1 addInputsToEnvAndSubstitute(Abstract1 absValue, Environment newEnv, VariableDeclarationContainer varDeclCont) throws ApronException {
+		Abstract1 absValueNInputs = new Abstract1(absValue.getCreationManager(), absValue);
+//		System.out.println(Util.printAbst("absValueN", absValueNInputs, env, man));
+		absValueNInputs.changeEnvironment(absValue.getCreationManager(), newEnv, false);
+//		System.out.println(Util.printAbst("absValueNInputs", absValueNInputs, env, man));
+		absValueNInputs = substituteTopBooleansTo01(absValueNInputs, varDeclCont);
+//		System.out.println(Util.printAbst("absValueNInputs substituted to [0, 1]", absValueNInputs, env, man));
+		return absValueNInputs;
+	}
 	
 }

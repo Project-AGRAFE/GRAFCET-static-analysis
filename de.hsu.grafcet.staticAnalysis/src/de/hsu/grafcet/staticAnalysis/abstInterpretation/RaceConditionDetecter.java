@@ -31,6 +31,7 @@ import terms.*;
 public class RaceConditionDetecter extends Detecter{
 
 	Hypergraf hyperGrafcet;
+	VariableDeclarationContainer varDclCnt;
 	Set<Set<StepActionObject>> setsOfConcurrentActions = new HashSet<Set<StepActionObject>>();; //TODO maps würden sich auch eignen mit key: varName
 	Set<List<StepActionObject>> setsOfConcurrentPairs = new HashSet<List<StepActionObject>>();
 	Set<List<StepActionObject>> setsOfRaceConditionPairs = new HashSet<List<StepActionObject>>();
@@ -45,6 +46,7 @@ public class RaceConditionDetecter extends Detecter{
 	public RaceConditionDetecter(HierarchyOrder hierarchyOrder) {
 		super(hierarchyOrder);
 		this.hyperGrafcet = hierarchyOrder.getHypergraf();
+		this.varDclCnt = hierarchyOrder.getHypergraf().getGlobalGrafcet().getVariableDeclarationContainer();
 	}
 	
 	@Override
@@ -72,9 +74,13 @@ public class RaceConditionDetecter extends Detecter{
 	
 	private boolean isOverlapping(Term t1, Abstract1 abs1, Term t2, Abstract1 abs2) throws ApronException {
 		Manager man = new Box();
-		Environment env = hierarchyOrder.getApronEnvironment();
-		TransferFunction transfer1 = new TransferFunction(null, abs1, man, env);
-		TransferFunction transfer2 = new TransferFunction(null, abs2, man, env);
+		Environment env = Util.generateEnvironment(hyperGrafcet, true);
+		TransferFunction transfer1 = new TransferFunction(null, 
+				Util.addInputsToEnvAndSubstitute(abs1, env, varDclCnt), man, env);
+		TransferFunction transfer2 = new TransferFunction(null,
+				Util.addInputsToEnvAndSubstitute(abs2, env, varDclCnt), man, env);
+		transfer1.setModelInputVariabels(true);
+		transfer2.setModelInputVariabels(true);
 		Abstract1 e1 = transfer1.transferTerm(t1);
 		Abstract1 e2 = transfer2.transferTerm(t2);		
 		Abstract1 overlap = e1.meetCopy(man, e2);
@@ -99,11 +105,16 @@ public class RaceConditionDetecter extends Detecter{
 	}
 	
 	private boolean isRaceCondition(StepActionObject sa1, StepActionObject sa2) throws ApronException {
+		if(sa1.getStatementTermMap().size() == 0 || sa2.getStatementTermMap().size() == 0) {
+			//if step is activated due to enclosings or forcings this implementation is not able to trace the trigger condition
+			//and simply returns true.
+			return true;
+		}
 		for (Statement s1 : sa1.getStatementTermMap().keySet()) {
 			for (Statement s2 : sa2.getStatementTermMap().keySet()) {
 				if (isOverlapping(sa1.getStatementTermMap().get(s1),hierarchyOrder.getAbstract1FromStatement(s1),
 						sa2.getStatementTermMap().get(s2),hierarchyOrder.getAbstract1FromStatement(s2))) {
-					return true; //not every possibility is checked
+					return true;
 				}
 			}
 		}

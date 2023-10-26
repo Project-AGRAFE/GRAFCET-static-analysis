@@ -298,8 +298,8 @@ public class TransferFunction {
 					recursiveLinearExprBuilder(((Addition)term).getSubterm().get(1)));
 		}else if (term instanceof Substraction) {
 			return new Texpr1BinNode(Texpr1BinNode.OP_SUB,
-					recursiveLinearExprBuilder(((Addition)term).getSubterm().get(0)), 
-					recursiveLinearExprBuilder(((Addition)term).getSubterm().get(1)));
+					recursiveLinearExprBuilder(((Substraction)term).getSubterm().get(0)), 
+					recursiveLinearExprBuilder(((Substraction)term).getSubterm().get(1)));
 		}
 		throw new IllegalArgumentException("incorrect syntax or error in algorithm");
 	}
