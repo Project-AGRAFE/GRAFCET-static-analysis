@@ -1,4 +1,4 @@
-package de.hsu.grafcet.staticAnalysis.abstInterpretation;
+package de.hsu.grafcet.staticAnalysis.verification;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -18,6 +18,8 @@ import apron.Box;
 import apron.Environment;
 import apron.Manager;
 import de.hsu.grafcet.*;
+import de.hsu.grafcet.staticAnalysis.abstInterpretation.TransferFunction;
+import de.hsu.grafcet.staticAnalysis.abstInterpretation.Util;
 import de.hsu.grafcet.staticAnalysis.hierarchyOrder.HierarchyDependency;
 import de.hsu.grafcet.staticAnalysis.hierarchyOrder.HierarchyOrder;
 import de.hsu.grafcet.staticAnalysis.hierarchyOrder.InitializationType;

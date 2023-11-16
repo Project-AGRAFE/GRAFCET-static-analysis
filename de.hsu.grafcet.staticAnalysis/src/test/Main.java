@@ -2,7 +2,9 @@ package test;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
 import apron.*;
 import de.hsu.grafcet.Grafcet;
@@ -16,7 +18,7 @@ public class Main {
 	public static void main(String[] args) throws ApronException {
 
 		
-		ScalabilityTest.testSDasicParallel();
+//		ScalabilityTest.testSDasicParallel();
 //		new TestXMISerilazation().testXMISerilization();
 		
 		//createPartialAbstract1ForInterface();
@@ -26,6 +28,13 @@ public class Main {
 //		minimalApronExample();
 		
 		//abstract0Bug();
+		
+		Set<Integer> ints = new LinkedHashSet<Integer>();
+		ints.add(new Integer(1));
+		ints.add(new Integer(3));
+		System.out.println(ints);
+		Set<Object> objs = new LinkedHashSet<Object>(ints);
+		System.out.println(objs);
 
 	}
 	

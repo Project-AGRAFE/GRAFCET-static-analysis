@@ -1,4 +1,4 @@
-package de.hsu.grafcet.staticAnalysis.abstInterpretation;
+package de.hsu.grafcet.staticAnalysis.verification;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -6,6 +6,7 @@ import java.util.Set;
 import apron.Abstract1;
 import apron.ApronException;
 import apron.Box;
+import de.hsu.grafcet.staticAnalysis.abstInterpretation.TransferFunction;
 import de.hsu.grafcet.staticAnalysis.hierarchyOrder.*;
 import de.hsu.grafcet.staticAnalysis.hypergraf.*;
 

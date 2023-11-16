@@ -9,8 +9,9 @@ import de.hsu.grafcet.*;
 
 public class Subgraf implements ISubgraf{
 
-	LinkedHashSet<Vertex> vertices = new LinkedHashSet<Vertex>();
-	LinkedHashSet<Edge> edges = new LinkedHashSet<Edge>();
+	Set<Vertex> vertices = new LinkedHashSet<Vertex>();
+	Set<Edge> edges = new LinkedHashSet<Edge>();
+	Set<Statement> statements = null;
 	PartialGrafcet partialGrafcet;
 	int hierarchyDepth;
 	private LinkedHashSet<Vertex> initialVertices = null;
@@ -77,20 +78,45 @@ public class Subgraf implements ISubgraf{
 		return downstreamEdges;
 	}
 	
+	public Set<? extends Statement> getDownstream(Statement statement) {
+		if(statement instanceof Vertex) {
+			return getDownstreamEdges((Vertex) statement);
+		} else if (statement instanceof Edge) {
+			return ((Edge) statement).getDownstream();
+		} 
+		return null;		
+	}
 	
-	public LinkedHashSet<Vertex> getVertices() {
+	
+	public Set<Vertex> getVertices() {
 		return vertices;
 	}
-	public void setVertices(LinkedHashSet<Vertex> vertices) {
+	public void setVertices(Set<Vertex> vertices) {
 		this.vertices = vertices;
 	}
-	public LinkedHashSet<Edge> getEdges() {
+	public Set<Edge> getEdges() {
 		return edges;
 	}
 	public void setEdges(LinkedHashSet<Edge> edges) {
 		this.edges = edges;
 	}
 
+	public Set<Statement> getStatements(){
+		if(statements != null) {
+			return statements;
+		}
+		statements = new LinkedHashSet<Statement>();
+		statements.addAll(this.getVertices());
+		statements.addAll(this.getEdges());
+		return statements;
+	}
+	
+	public void resetStatementVisitCounter() {
+		for (Statement s : getStatements()) {
+			s.resetVisited();
+		}
+	}
+	
 	public PartialGrafcet getPartialGrafcet() {
 		return partialGrafcet;
 	}

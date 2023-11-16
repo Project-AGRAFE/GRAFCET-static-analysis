@@ -1,4 +1,4 @@
-package de.hsu.grafcet.staticAnalysis.abstInterpretation;
+package de.hsu.grafcet.staticAnalysis.verification;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -38,6 +38,8 @@ import apron.Var;
 import de.hsu.grafcet.GrafcetFactory;
 import de.hsu.grafcet.Transition;
 import de.hsu.grafcet.VariableDeclarationContainer;
+import de.hsu.grafcet.staticAnalysis.abstInterpretation.TransferFunction;
+import de.hsu.grafcet.staticAnalysis.abstInterpretation.Util;
 import de.hsu.grafcet.staticAnalysis.hierarchyOrder.HierarchyDependency;
 import de.hsu.grafcet.staticAnalysis.hierarchyOrder.HierarchyOrder;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Edge;

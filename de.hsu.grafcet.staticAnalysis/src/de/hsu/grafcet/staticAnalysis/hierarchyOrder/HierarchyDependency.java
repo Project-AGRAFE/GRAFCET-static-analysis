@@ -9,6 +9,7 @@ import java.util.Set;
 import de.hsu.grafcet.ForcingOrder;
 import de.hsu.grafcet.InitializableType;
 import de.hsu.grafcet.staticAnalysis.hypergraf.*;
+import de.hsu.grafcet.staticAnalysis.structuralAnalysis.ExtendedStructuralConcurrencyAnalyzer;
 
 
 /**
@@ -22,7 +23,9 @@ public class HierarchyDependency{
 	private Vertex superiorTriggerVertex;	
 	private Set<Vertex> reachableVertices = new LinkedHashSet<Vertex>();
 	private Set<Vertex> liveVertices = new LinkedHashSet<Vertex>();
-	private Map<Vertex, Set<Vertex>> concurrentVertices = new LinkedHashMap<Vertex, Set<Vertex>>();
+	private Map<Vertex, Set<Vertex>> concurrentVerticeVerticesMap = new LinkedHashMap<Vertex, Set<Vertex>>();
+//	private Map<Vertex, Set<Statement>> concurrentVerticeStatementsMap = new LinkedHashMap<Vertex, Set<Statement>>();
+	private Map<Statement, Set<Statement>> concurrentStatementStatementsMap = null;
 	private ISubgraf superior;
 	private Subgraf inferior;
 	private String inferiorName;
@@ -64,13 +67,17 @@ public class HierarchyDependency{
 		this.liveVertices = liveVertices;
 	}
 
-	public Map<Vertex, Set<Vertex>> getConcurrentVertices() {
-		return concurrentVertices;
+	public Map<Vertex, Set<Vertex>> getConcurrentVerticeVerticesMap() {
+		return concurrentVerticeVerticesMap;
+	}
+	
+	public Set<Vertex> getConcurrentVertices(Vertex v){
+		return concurrentVerticeVerticesMap.get(v);
 	}
 
-	public void setConcurrentVertices(Map<Vertex, Set<Vertex>> concurrentVertices) {
-		this.concurrentVertices = concurrentVertices;
-	}
+//	public void setConcurrentVertices(Map<Vertex, Set<Vertex>> concurrentVertices) {
+//		this.concurrentVerticeVerticesMap = concurrentVertices;
+//	}
 
 	public ISubgraf getSuperior() {
 		return superior;
@@ -95,6 +102,9 @@ public class HierarchyDependency{
 	public void setType(InitializationType type) {
 		this.type = type;
 	}
+	/**
+	 * @deprecated weil Methode unten deprecated
+	 */
 	public Set<Vertex> getInitiallyActiveVertices() {
 		if(initiallyActiveVertices == null) {
 			setInitiallyActiveVertices();
@@ -102,6 +112,24 @@ public class HierarchyDependency{
 		return initiallyActiveVertices;
 	}
 	
+	/**
+	 * @deprecated calcularion of concurrent Transitions is not working
+	 */
+	public void setConcurrentStatementStatementsMap() {
+		this.concurrentStatementStatementsMap = ExtendedStructuralConcurrencyAnalyzer.calculateConcurrentStatementsForDependency(this);
+	}
+	
+	/**
+	 * @deprecated calcularion of concurrent Transitions is not working
+	 */
+	public Map<Statement, Set<Statement>> getConcurrentStatementStatementsMap() {
+		if(concurrentStatementStatementsMap == null) {
+			setConcurrentStatementStatementsMap();
+		}
+		return concurrentStatementStatementsMap;
+	}
+	
+
 	/**
 	 * @deprecated
 	 */
@@ -165,11 +193,11 @@ public class HierarchyDependency{
 			return;
 		}
 		//if list of concurrent steps is not created yet:
-		if (!this.getConcurrentVertices().containsKey(annotatedVertex)) {
-			this.getConcurrentVertices().put(annotatedVertex, new LinkedHashSet<Vertex>());
+		if (!this.getConcurrentVerticeVerticesMap().containsKey(annotatedVertex)) {
+			this.getConcurrentVerticeVerticesMap().put(annotatedVertex, new LinkedHashSet<Vertex>());
 		}
 		//add step
-		this.getConcurrentVertices().get(annotatedVertex).add(concurrentVertex);
+		this.getConcurrentVerticeVerticesMap().get(annotatedVertex).add(concurrentVertex);
 	}
 
 	@Override
@@ -177,8 +205,14 @@ public class HierarchyDependency{
 		String txt = inferior.getPartialGrafcet().getName() + " - with initialization type " + type + ": \n";
 		txt +=  "reachable steps: " + reachableVertices + "\n";
 		txt += "concurrent steps: \n";
-		for (Vertex vertex : concurrentVertices.keySet()) {
-			txt += vertex + ": " + concurrentVertices.get(vertex) + "\n";
+		for (Vertex vertex : concurrentVerticeVerticesMap.keySet()) {
+			txt += vertex + ": " + concurrentVerticeVerticesMap.get(vertex) + "\n";
+		}
+		
+		getConcurrentStatementStatementsMap(); //trigger calculation
+		txt += "concurrent statements: \n";
+		for (Statement statement: concurrentStatementStatementsMap.keySet()) {
+			txt += statement + ": " + concurrentVerticeVerticesMap.get(statement) + "\n";
 		}
 		return txt;
 	}

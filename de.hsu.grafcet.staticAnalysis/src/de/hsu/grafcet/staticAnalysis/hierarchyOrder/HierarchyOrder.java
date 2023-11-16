@@ -17,12 +17,7 @@ import apron.Environment;
 import de.hsu.grafcet.Grafcet;
 import de.hsu.grafcet.InitializableType;
 import de.hsu.grafcet.Step;
-import de.hsu.grafcet.staticAnalysis.abstInterpretation.Detecter;
-import de.hsu.grafcet.staticAnalysis.abstInterpretation.FlawedTransitionDetecter;
-import de.hsu.grafcet.staticAnalysis.abstInterpretation.HierarchicalConflictDetecter;
-import de.hsu.grafcet.staticAnalysis.abstInterpretation.RaceConditionDetecter;
 import de.hsu.grafcet.staticAnalysis.abstInterpretation.ModAbstractInterpreter;
-import de.hsu.grafcet.staticAnalysis.abstInterpretation.TransientRunDetecter;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Edge;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Hypergraf;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Statement;
@@ -30,6 +25,11 @@ import de.hsu.grafcet.staticAnalysis.hypergraf.Subgraf;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Vertex;
 import de.hsu.grafcet.staticAnalysis.hypergrafTransromation.HypergrafcetGenerator;
 import de.hsu.grafcet.staticAnalysis.structuralAnalysis.StructuralConcurrencyAnalyzer;
+import de.hsu.grafcet.staticAnalysis.verification.Detecter;
+import de.hsu.grafcet.staticAnalysis.verification.FlawedTransitionDetecter;
+import de.hsu.grafcet.staticAnalysis.verification.HierarchicalConflictDetecter;
+import de.hsu.grafcet.staticAnalysis.verification.RaceConditionDetecter;
+import de.hsu.grafcet.staticAnalysis.verification.TransientRunDetecter;
 import terms.VariableDeclaration;
 
 public class HierarchyOrder {
@@ -244,8 +244,8 @@ public class HierarchyOrder {
 		for (HierarchyDependency d: dependencies) {
 			if (d.getReachableVertices().contains(vertex)) {
 				containingDependencies.add(d);
-				if (d.getConcurrentVertices().get(vertex) != null) {
-					concurrentSteps.addAll(d.getConcurrentVertices().get(vertex));
+				if (d.getConcurrentVerticeVerticesMap().get(vertex) != null) {
+					concurrentSteps.addAll(d.getConcurrentVerticeVerticesMap().get(vertex));
 				}
 				//concurrentSteps.add(d.getSuperiorTriggerVertex());
 				containingSubgraf = d.getInferior(); //sollte immer der selbe sein
@@ -373,8 +373,8 @@ public class HierarchyOrder {
 		for (HierarchyDependency d : dependencies) {
 			if (d.getReachableVertices().contains(d1.getSuperiorTriggerVertex()) 
 					&& d.getReachableVertices().contains(d2.getSuperiorTriggerVertex())) {
-				if(d.getConcurrentVertices().get(d1.getSuperiorTriggerVertex()) != null) {
-					if (d.getConcurrentVertices().get(d1.getSuperiorTriggerVertex())
+				if(d.getConcurrentVerticeVerticesMap().get(d1.getSuperiorTriggerVertex()) != null) {
+					if (d.getConcurrentVerticeVerticesMap().get(d1.getSuperiorTriggerVertex())
 							.contains(d2.getSuperiorTriggerVertex())) {
 						return true;
 					}

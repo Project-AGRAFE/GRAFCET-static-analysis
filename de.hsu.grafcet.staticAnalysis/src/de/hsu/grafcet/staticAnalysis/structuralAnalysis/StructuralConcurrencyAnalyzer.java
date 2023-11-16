@@ -118,11 +118,11 @@ public class StructuralConcurrencyAnalyzer {
 		LinkedHashSet<Vertex> adoptedConcurrentVertices = new LinkedHashSet<Vertex>(); 
 		for (Vertex upstreamVertex : edge.getUpstream()) {
 			if (adoptedConcurrentVertices.isEmpty()) {
-				if (dependency.getConcurrentVertices().get(upstreamVertex) != null) {
-					adoptedConcurrentVertices.addAll(dependency.getConcurrentVertices().get(upstreamVertex));
+				if (dependency.getConcurrentVerticeVerticesMap().get(upstreamVertex) != null) {
+					adoptedConcurrentVertices.addAll(dependency.getConcurrentVerticeVerticesMap().get(upstreamVertex));
 				}
 			} else {
-				adoptedConcurrentVertices.retainAll(dependency.getConcurrentVertices().get(upstreamVertex));
+				adoptedConcurrentVertices.retainAll(dependency.getConcurrentVerticeVerticesMap().get(upstreamVertex));
 			}
 		}
 		dependency.addConcurrentVertices(downstreamVertex, adoptedConcurrentVertices);

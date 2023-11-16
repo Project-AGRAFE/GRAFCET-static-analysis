@@ -35,15 +35,15 @@ import apron.Manager;
 import de.hsu.grafcet.*;
 import de.hsu.grafcet.staticAnalysis.abstInterpretation.SequAbstractInterpreter;
 import de.hsu.grafcet.staticAnalysis.abstInterpretation.ModAbstractInterpreter;
-import de.hsu.grafcet.staticAnalysis.abstInterpretation.TransientRunDetecter;
-import de.hsu.grafcet.staticAnalysis.abstInterpretation.Detecter;
-import de.hsu.grafcet.staticAnalysis.abstInterpretation.FlawedTransitionDetecter;
-import de.hsu.grafcet.staticAnalysis.abstInterpretation.HierarchicalConflictDetecter;
-import de.hsu.grafcet.staticAnalysis.abstInterpretation.RaceConditionDetecter;
 import de.hsu.grafcet.staticAnalysis.hierarchyOrder.HierarchyDependency;
 import de.hsu.grafcet.staticAnalysis.hierarchyOrder.HierarchyOrder;
 import de.hsu.grafcet.staticAnalysis.hypergrafTransromation.HypergrafcetGenerator;
 import de.hsu.grafcet.staticAnalysis.structuralAnalysis.StructuralConcurrencyAnalyzer;
+import de.hsu.grafcet.staticAnalysis.verification.Detecter;
+import de.hsu.grafcet.staticAnalysis.verification.FlawedTransitionDetecter;
+import de.hsu.grafcet.staticAnalysis.verification.HierarchicalConflictDetecter;
+import de.hsu.grafcet.staticAnalysis.verification.RaceConditionDetecter;
+import de.hsu.grafcet.staticAnalysis.verification.TransientRunDetecter;
 
 public class RunAbstractInterpretation implements IObjectActionDelegate{
 

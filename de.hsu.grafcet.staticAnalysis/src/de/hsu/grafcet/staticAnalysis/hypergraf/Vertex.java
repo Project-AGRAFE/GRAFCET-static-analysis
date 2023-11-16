@@ -69,7 +69,7 @@ public class Vertex implements Statement{
 
 	@Override
 	public String toString() {
-		return Integer.toString(id);
+		return "s" + Integer.toString(id);
 	}
 	
 	

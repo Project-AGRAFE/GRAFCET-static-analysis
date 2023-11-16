@@ -96,7 +96,7 @@ public class SequAbstractInterpreter {
 		//out += "\n" + "==== interface === \n" + Arrays.toString(interfaceIn.toBox(man));
 		Map<Statement, Abstract1> interfaceTemp = new HashMap<Statement, Abstract1>();
 		interfaceTemp.put(null, interfaceIn);
-		out += "\n" + Util.printAbstMap("interface", interfaceTemp, env, man);
+		out += "\n" + Util.printAbstMap("interference", interfaceTemp, env, man);
 
 		while (!worklist.isEmpty()) {
 			Statement statement = worklist.pollFirst();
@@ -154,32 +154,7 @@ public class SequAbstractInterpreter {
 	public String getOutputString() {
 		return outputString;
 	}
-	
-	//verschoben in Util
-//	private String printToBox(String msg) {
-//		String out = "";
-//		
-//		out += "\n===== " + msg + " =====";
-//		out += "\n" + Arrays.toString(env.getVars());
-//		
-//		for (Statement n : this.abstractEnvMap.keySet()) {
-//			try {
-//				String nType = "";
-//				if(n instanceof Vertex) {
-//					nType = "Step ";
-//				} else {
-//					nType = "Tran ";
-//				}
-//				Abstract1 abstr1 = abstractEnvMap.get(n);
-//				Interval[] box = abstr1.toBox(man);
-//				out += "\n" + nType + n.getId() + ": " + Arrays.toString(box);
-//			} catch (ApronException e) {
-//				e.printStackTrace();
-//			}
-//		}
-//		return out;
-//	}
-	
+		
 	private Set<? extends Statement> getDownstream(Statement statement, Subgraf subgraf) {
 		if(statement instanceof Vertex) {
 			return subgraf.getDownstreamEdges((Vertex) statement);

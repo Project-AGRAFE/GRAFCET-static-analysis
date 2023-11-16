@@ -22,19 +22,17 @@ public class ModAbstractInterpreter {
 
 	HierarchyOrder hierarchyOrder;
 	Hypergraf hypergraf;
-	Map<HierarchyDependency, Map<Statement, Abstract1>> interfaceMap = new HashMap<HierarchyDependency, Map<Statement, Abstract1>>(); //Interface containing current abstractEnvMap (cf. SequAbstractInterpreter) for every subgraf
-	Map<HierarchyDependency, Map<Statement, Abstract1>> abstResultsHypergrafMap = new HashMap<HierarchyDependency, Map<Statement, Abstract1>>(); 
+	Map<HierarchyDependency, Map<Statement, Abstract1>> interferenceDependencyAbsEnvMap = new HashMap<HierarchyDependency, Map<Statement, Abstract1>>(); //Interference containing current abstractEnvMap (cf. SequAbstractInterpreter) for every subgraf
+	Map<HierarchyDependency, Map<Statement, Abstract1>> resultsDependencyAbsEnvMap = new HashMap<HierarchyDependency, Map<Statement, Abstract1>>(); //Results of the abstract interpretation containing the abstract environment for every subgraf
 	Manager man = new Box();
 	Environment env;
-//	String[] varNames;
-//	Set<VariableDeclaration> variableDeclarationSet = new LinkedHashSet<VariableDeclaration>();
 	String fullLog = "";
 	
 	public Environment getEnv() {
 		return env;
 	}
 	public Abstract1 getAbstract1FromStatement(HierarchyDependency d, Statement s) {
-		return abstResultsHypergrafMap.get(d).get(s);
+		return resultsDependencyAbsEnvMap.get(d).get(s);
 	}
 	
 	
@@ -55,28 +53,28 @@ public class ModAbstractInterpreter {
 	 * @throws ApronException
 	 */
 	private void modularAbstractInterpretation() throws ApronException {
-		Map<HierarchyDependency, Map<Statement, Abstract1>>  copyInterfaceMap;
+		Map<HierarchyDependency, Map<Statement, Abstract1>>  copyInterferenceMap;
 		int iteration = 1;
 		do {
 			fullLog += " \n\n ========  iteration " + iteration + " ======== \n\n";
 			iteration ++;
 			//shallow copy (!) the interface
-			copyInterfaceMap = new HashMap<HierarchyDependency, Map<Statement, Abstract1>>(interfaceMap);
+			copyInterferenceMap = new HashMap<HierarchyDependency, Map<Statement, Abstract1>>(interferenceDependencyAbsEnvMap);
 			for (HierarchyDependency dependency : hierarchyOrder.getDependencies()) {
 				
-				Abstract1 i = joinInterface(dependency, copyInterfaceMap);
+				Abstract1 i = joinInterface(dependency, copyInterferenceMap);
 				SequAbstractInterpreter seqAI = new SequAbstractInterpreter(dependency, man, env, i);
-				seqAI.runAnalysis();
-				abstResultsHypergrafMap.put(dependency, seqAI.getDeepcopyAbstractEnvMap());
+ 				seqAI.runAnalysis();
+				resultsDependencyAbsEnvMap.put(dependency, seqAI.getDeepcopyAbstractEnvMap());
 				fullLog += seqAI.getOutputString(); 
 				//initialize Interface
-				if (interfaceMap.get(dependency) == null) {
-					interfaceMap.put(dependency, seqAI.getInterfaceOut());
+				if (interferenceDependencyAbsEnvMap.get(dependency) == null) {
+					interferenceDependencyAbsEnvMap.put(dependency, seqAI.getInterfaceOut());
 				} else {
-					interfaceMap.put(dependency, Util.joinInterface(man, interfaceMap.get(dependency), seqAI.getInterfaceOut()));
+					interferenceDependencyAbsEnvMap.put(dependency, Util.joinInterface(man, interferenceDependencyAbsEnvMap.get(dependency), seqAI.getInterfaceOut()));
 				}
 			}	
-		} while (!Util.equalsInterface(man, interfaceMap, copyInterfaceMap));
+		} while (!Util.equalsInterface(man, interferenceDependencyAbsEnvMap, copyInterferenceMap));
 	}
 
 	
@@ -105,13 +103,13 @@ public class ModAbstractInterpreter {
 	
 	@Override
 	public String toString() {
-		String out = "\n\n\n#################  Final interfaces  ###############";
-		for(HierarchyDependency d : interfaceMap.keySet()) {
-			out += Util.printAbstMap(d.getInferiorName(), interfaceMap.get(d), env, man);
+		String out = "\n\n\n#################  Final interferende  ###############";
+		for(HierarchyDependency d : interferenceDependencyAbsEnvMap.keySet()) {
+			out += Util.printAbstMap(d.getInferiorName(), interferenceDependencyAbsEnvMap.get(d), env, man);
 		}
 		out += "\n\n\n#################  Final abstract values  ###############";
-		for(HierarchyDependency d : abstResultsHypergrafMap.keySet()) {
-			out += Util.printAbstMap(d.getInferiorName(), abstResultsHypergrafMap.get(d), env, man);
+		for(HierarchyDependency d : resultsDependencyAbsEnvMap.keySet()) {
+			out += Util.printAbstMap(d.getInferiorName(), resultsDependencyAbsEnvMap.get(d), env, man);
 		}
 		return out;
 	}

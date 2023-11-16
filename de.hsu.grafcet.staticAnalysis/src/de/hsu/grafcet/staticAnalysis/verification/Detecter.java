@@ -1,4 +1,4 @@
-package de.hsu.grafcet.staticAnalysis.abstInterpretation;
+package de.hsu.grafcet.staticAnalysis.verification;
 
 import apron.ApronException;
 import apron.Box;
