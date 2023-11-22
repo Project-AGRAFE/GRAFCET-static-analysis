@@ -89,6 +89,10 @@ public class RunAbstractInterpretation implements IObjectActionDelegate{
                                 String out1  = hierarchyOrder.analyzeReachabilityAndConcurrency();
                                 Util.createOutputFile(out1 , target.getLocation().toString() + "/Result_Concurrency_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
                                 hierarchyOrder.runAbstractInterpretation();
+                                
+                                String out12 = hierarchyOrder.runConcurrentAbstractInterpretation();
+                                Util.createOutputFile(out12 , target.getLocation().toString() + "/Result_Concurrency_AI_TEST_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
+                                
                                 String out2 = hierarchyOrder.getAIResult();
                                 Util.createOutputFile(out2, target.getLocation().toString() + "/Result_AI_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
                                 String out3 = hierarchyOrder.getAIFullLog();

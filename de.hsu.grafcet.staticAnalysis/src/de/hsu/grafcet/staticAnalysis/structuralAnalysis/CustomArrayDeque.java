@@ -21,6 +21,8 @@ public class CustomArrayDeque<E> extends ArrayDeque<E> {
 	 */
 	@Override
     public boolean addAll(Collection<? extends E> c) {
+		if (c == null) 
+					return false;
         boolean modified = false;
         for (E e : c)
             if (add(e))

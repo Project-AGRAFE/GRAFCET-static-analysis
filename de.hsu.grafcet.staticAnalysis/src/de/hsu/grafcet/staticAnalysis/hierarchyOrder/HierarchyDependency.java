@@ -41,6 +41,10 @@ public class HierarchyDependency{
 		this.inferiorName = inferior.getPartialGrafcet().getName();
 		this.type = type;
 		this.initiallyActiveVertices = initiallyActiveVertices;
+		
+		for (Vertex v : inferior.getVertices()) {
+			concurrentVerticeVerticesMap.put(v, new LinkedHashSet<Vertex>());
+		}
 	}
 
 	public Vertex getSuperiorTriggerVertex() {

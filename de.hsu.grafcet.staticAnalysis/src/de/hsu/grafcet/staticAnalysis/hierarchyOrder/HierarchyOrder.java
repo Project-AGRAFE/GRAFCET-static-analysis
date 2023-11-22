@@ -17,7 +17,9 @@ import apron.Environment;
 import de.hsu.grafcet.Grafcet;
 import de.hsu.grafcet.InitializableType;
 import de.hsu.grafcet.Step;
+import de.hsu.grafcet.staticAnalysis.abstInterpretation.ConcurrAbstractInterpreter;
 import de.hsu.grafcet.staticAnalysis.abstInterpretation.ModAbstractInterpreter;
+import de.hsu.grafcet.staticAnalysis.abstInterpretation.Util;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Edge;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Hypergraf;
 import de.hsu.grafcet.staticAnalysis.hypergraf.Statement;
@@ -74,6 +76,17 @@ public class HierarchyOrder {
 	public void runAbstractInterpretation() throws ApronException {
 		tmai = new ModAbstractInterpreter(this);
 		tmai.runAnalysis();
+	}
+	
+	public String runConcurrentAbstractInterpretation() throws ApronException {
+		String out = "Result of concurrent abstract interpretation:\n";
+		for (HierarchyDependency dependency : this.dependencies) {
+			out += "=== " + dependency.getInferiorName() + " ===";
+			ConcurrAbstractInterpreter cai = new ConcurrAbstractInterpreter(dependency, Util.generateEnvironment(this.hypergraf, false));
+			cai.runAnalysis();
+			out += cai.getResult();
+		}
+		return out;		
 	}
 	
 	public String getAIResult() {
