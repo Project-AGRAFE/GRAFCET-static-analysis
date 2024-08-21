@@ -38,6 +38,8 @@ public class ConcurrAbstractInterpreter {
 	Subgraf subgraf;
 	Set<Statement> statements;
 	
+	Abstract1 interferenceInPG;
+	
 
 	public ConcurrAbstractInterpreter(HierarchyDependency dependency, Environment env) throws ApronException {
 		this.dependency = dependency;
@@ -49,24 +51,30 @@ public class ConcurrAbstractInterpreter {
 		abstractEnvMap = initializeAbstractEnvMap(subgraf);
 	}
 	
+	public ConcurrAbstractInterpreter(HierarchyDependency dependency, Environment env, Abstract1 interferenceInPG) throws ApronException {
+		this(dependency, env);
+		this.interferenceInPG = interferenceInPG;
+	}
+	
 	private void concurrentAbstracInterpretation() throws ApronException {
 		//initialize worklist
  		worklist.addAll(dependency.getInitiallyActiveVertices());
 		while (!worklist.isEmpty()) {
 			Statement n = worklist.pollFirst();
 			n.increaseVisited();
-			Abstract1 interferenceN = new Abstract1(man, env, true);
+			Abstract1 interferenceInStep = new Abstract1(man, env, true);
 			if (n instanceof Vertex) {
-				interferenceN = calculateInterferenceN((Vertex)n);
-				TransferFunction transferTemp = new TransferFunction(n, abstractEnvMap.get(n), man, env, interferenceN);
+				interferenceInStep = calculateInterferenceInStep((Vertex)n);
+				TransferFunction transferTemp = new TransferFunction(n, abstractEnvMap.get(n), man, env, 
+						interferenceInStep.joinCopy(man, interferenceInPG));
 				transferTemp.transferInterface();
-				Abstract1 interferenceEntryN = transferTemp.getInterfaceEntry();
-				if (interferenceEntryN != null) {
-					setInterfaceEntry(interferenceEntryN, n);			//if n writes output variable
-					if (!interferenceEntryN.isBottom(man)) {			//n writes output variable
+				Abstract1 interferenceOutN = transferTemp.getInterferenceOutN();
+				if (interferenceOutN != null) {
+					setInterferenceEntry(interferenceOutN, n);			//if n writes output variable
+					if (!interferenceOutN.isBottom(man)) {			//n writes output variable
 						for (Vertex vertexConcurrentToN : dependency.getConcurrentVertices((Vertex) n)) {
 							if (!abstractEnvMap.get(vertexConcurrentToN).isBottom(man)) {		//add to worklist only if already reachable
-								if(!interferenceEntryN.isIncluded(man, abstractEnvMap.get(vertexConcurrentToN))) {
+								if(!interferenceOutN.isIncluded(man, abstractEnvMap.get(vertexConcurrentToN))) {
 									worklist.add(vertexConcurrentToN);
 								}
 							}
@@ -74,8 +82,8 @@ public class ConcurrAbstractInterpreter {
 					}							
 				}
 			}
-			TransferFunction transfer = new TransferFunction(n, abstractEnvMap.get(n), man, env, interferenceN);
-			Abstract1 e = transfer.transferInterface().joinCopy(man, interferenceN);
+			TransferFunction transfer = new TransferFunction(n, abstractEnvMap.get(n), man, env, interferenceInStep.joinCopy(man, interferenceInPG));
+			Abstract1 e = transfer.transferInterface().joinCopy(man, interferenceInStep.joinCopy(man, interferenceInPG));
 			for (Statement nDown : subgraf.getDownstream(n)) {
 					if(nDown instanceof Edge) {
 						Abstract1 eMeetNeighbourN = new Abstract1(man, e);				//meet of all incoming path for nDown (inclucing path from n)
@@ -109,8 +117,8 @@ public class ConcurrAbstractInterpreter {
 	 */
 	private Abstract1 transferWithInterface(Vertex n) throws ApronException {
 		Abstract1 abstractEnvN = abstractEnvMap.get(n);
-		Abstract1 interferenceN = calculateInterferenceN(n);
-		TransferFunction transferN = new TransferFunction(n, abstractEnvN , man, env, interferenceN);
+		Abstract1 interferenceN = calculateInterferenceInStep(n);
+		TransferFunction transferN = new TransferFunction(n, abstractEnvN , man, env, interferenceN.joinCopy(man, interferenceInPG));
 		Abstract1 e = transferN.transferInterface();
 		if (!e.isBottom(man)) {						//ensure to consider the interface only iff n is reachable (e.g. e =! bot)
 			e = e.joinCopy(man, interferenceN);
@@ -142,7 +150,7 @@ public class ConcurrAbstractInterpreter {
 	 * @return a meet value of all interference values of the concurrent vertices of n except n itself
 	 * @throws ApronException
 	 */
-	private Abstract1 calculateInterferenceN(Vertex n) throws ApronException {
+	private Abstract1 calculateInterferenceInStep(Vertex n) throws ApronException {
 		Abstract1 interferenceN = new Abstract1(man, env, true);
 		Set<Vertex> concurrentVerticesN = dependency.getConcurrentVertices(n);
 		for (Statement s : interferenceStatementAbsEnvMap.keySet()) {
@@ -177,14 +185,22 @@ public class ConcurrAbstractInterpreter {
 		return abstractEnvMap;
 	}
 	
-	private void setInterfaceEntry(Abstract1 interfaceEntryN, Statement n) throws ApronException {
-		if (interfaceEntryN != null) {
+	private void setInterferenceEntry(Abstract1 interfaceOutN, Statement n) throws ApronException {
+		if (interfaceOutN != null) {
 			if (interferenceStatementAbsEnvMap.containsKey(n)) {	//Es müsste reichten, wenn Wert überschriben wird. Informaitonen müssten von Transfer Function enthalten bleiben
-				interferenceStatementAbsEnvMap.put(n, interferenceStatementAbsEnvMap.get(n).joinCopy(man, interfaceEntryN));
+				interferenceStatementAbsEnvMap.put(n, interferenceStatementAbsEnvMap.get(n).joinCopy(man, interfaceOutN));
 			} else {
-				interferenceStatementAbsEnvMap.put(n, interfaceEntryN);
+				interferenceStatementAbsEnvMap.put(n, interfaceOutN);
 			}
 		}
+	}
+	
+	public Map<Statement, Abstract1> getInterferenceOut(){
+		return interferenceStatementAbsEnvMap;
+	}
+	
+	public Map<Statement, Abstract1> getDeepcopyAbstractEnvMap() throws ApronException {
+		return Util.deepcopyEnvMap(man, abstractEnvMap);
 	}
 	
 	public void runAnalysis() throws ApronException {
@@ -197,7 +213,7 @@ public class ConcurrAbstractInterpreter {
 		for (Statement n : abstractEnvMap.keySet()) {
 			Abstract1 resultAbstractEnvN = new Abstract1(man, abstractEnvMap.get(n));
 			if (n instanceof Vertex) {
-				resultAbstractEnvN.join(man, calculateInterferenceN((Vertex)n));
+				resultAbstractEnvN.join(man, calculateInterferenceInStep((Vertex)n));
 			}
 			resultAbstractEnvMap.put(n, resultAbstractEnvN);
 		}

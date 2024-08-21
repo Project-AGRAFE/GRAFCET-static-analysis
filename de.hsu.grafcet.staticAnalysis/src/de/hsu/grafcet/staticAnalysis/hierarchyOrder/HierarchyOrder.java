@@ -61,7 +61,7 @@ public class HierarchyOrder {
 		return new String("not implemented");
 	}
 	
-	public String analyzeReachabilityAndConcurrency() {
+	public String structuralAnalysis() {
 		String out = "Reachability and Concurrency analysis: \n\n";
 		for (HierarchyDependency dependency : dependencies) {
 			out += "Partial Grafcet " + dependency.getInferior() + "\n Dependency: ";
@@ -73,6 +73,10 @@ public class HierarchyOrder {
 		return out;
 	}
 	
+	/**
+	 * @deprecated
+	 * @throws ApronException
+	 */
 	public void runAbstractInterpretation() throws ApronException {
 		tmai = new ModAbstractInterpreter(this);
 		tmai.runAnalysis();

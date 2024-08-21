@@ -18,7 +18,7 @@ public class Main {
 	public static void main(String[] args) throws ApronException {
 
 		
-//		ScalabilityTest.testSDasicParallel();
+		ScalabilityTest.testScalabilityBasicParallel();
 //		new TestXMISerilazation().testXMISerilization();
 		
 		//createPartialAbstract1ForInterface();
@@ -29,12 +29,12 @@ public class Main {
 		
 		//abstract0Bug();
 		
-		Set<Integer> ints = new LinkedHashSet<Integer>();
-		ints.add(new Integer(1));
-		ints.add(new Integer(3));
-		System.out.println(ints);
-		Set<Object> objs = new LinkedHashSet<Object>(ints);
-		System.out.println(objs);
+//		Set<Integer> ints = new LinkedHashSet<Integer>();
+//		ints.add(new Integer(1));
+//		ints.add(new Integer(3));
+//		System.out.println(ints);
+//		Set<Object> objs = new LinkedHashSet<Object>(ints);
+//		System.out.println(objs);
 
 	}
 	

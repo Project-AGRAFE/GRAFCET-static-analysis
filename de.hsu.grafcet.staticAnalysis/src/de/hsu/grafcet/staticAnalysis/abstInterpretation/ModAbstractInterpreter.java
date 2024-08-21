@@ -22,11 +22,12 @@ public class ModAbstractInterpreter {
 
 	HierarchyOrder hierarchyOrder;
 	Hypergraf hypergraf;
-	Map<HierarchyDependency, Map<Statement, Abstract1>> interferenceDependencyAbsEnvMap = new HashMap<HierarchyDependency, Map<Statement, Abstract1>>(); //Interference containing current abstractEnvMap (cf. SequAbstractInterpreter) for every subgraf
+	Map<HierarchyDependency, Map<Statement, Abstract1>> interferencePGDependencyAbsEnvMap = new HashMap<HierarchyDependency, Map<Statement, Abstract1>>(); //Interference containing current abstractEnvMap (cf. SequAbstractInterpreter) for every subgraf
 	Map<HierarchyDependency, Map<Statement, Abstract1>> resultsDependencyAbsEnvMap = new HashMap<HierarchyDependency, Map<Statement, Abstract1>>(); //Results of the abstract interpretation containing the abstract environment for every subgraf
 	Manager man = new Box();
 	Environment env;
 	String fullLog = "";
+	int wideningCounter = 0;
 	
 	public Environment getEnv() {
 		return env;
@@ -45,47 +46,91 @@ public class ModAbstractInterpreter {
 
 
 	public void runAnalysis() throws ApronException {
+		//modularAbstractInterpretationSequential();
 		modularAbstractInterpretation();
 	}
 	
 	/**
-	 * Analysis is performed for every dependency (combination of subgraf and a initial situation).
+	 *  Analysis is performed for every dependency (combination of subgraf and a initial situation).
 	 * @throws ApronException
 	 */
 	private void modularAbstractInterpretation() throws ApronException {
+		Map<HierarchyDependency, Map<Statement, Abstract1>>  copyInterferenceMap;
+		int iteration = 0;
+		do {
+			fullLog += " \n\n ========  iteration " + iteration + " ======== \n\n";
+			iteration ++;
+			wideningCounter++;
+			//shallow copy (!) the partial Grafcet interference
+			copyInterferenceMap = new HashMap<HierarchyDependency, Map<Statement, Abstract1>>(interferencePGDependencyAbsEnvMap);
+			for (HierarchyDependency dependency : hierarchyOrder.getDependencies()) {
+				Abstract1 i = getInterferenceInPG(dependency, copyInterferenceMap);
+				ConcurrAbstractInterpreter concurrAI = new ConcurrAbstractInterpreter(dependency, env, i);
+ 				concurrAI.runAnalysis();
+				resultsDependencyAbsEnvMap.put(dependency, concurrAI.getDeepcopyAbstractEnvMap());
+				fullLog += concurrAI.getResult(); 
+				//initialize Interface
+				if (interferencePGDependencyAbsEnvMap.get(dependency) == null) {
+					interferencePGDependencyAbsEnvMap.put(dependency, concurrAI.getInterferenceOut());
+				} else {
+					boolean widen = false;
+					if (wideningCounter > 5) {
+						widen = true;
+						wideningCounter = 0;
+					}
+					interferencePGDependencyAbsEnvMap.put(dependency, 
+							Util.joinInterferenceOrWidening(man, interferencePGDependencyAbsEnvMap.get(dependency), 
+									concurrAI.getInterferenceOut(), widen));
+				}
+			}	
+		} while (!Util.equalsInterface(man, interferencePGDependencyAbsEnvMap, copyInterferenceMap));
+	}
+	
+	
+	/**
+	 * @deprecated
+	 * Analysis is performed for every dependency (combination of subgraf and a initial situation).
+	 * @throws ApronException
+	 */
+	private void modularAbstractInterpretationSequential() throws ApronException {
 		Map<HierarchyDependency, Map<Statement, Abstract1>>  copyInterferenceMap;
 		int iteration = 1;
 		do {
 			fullLog += " \n\n ========  iteration " + iteration + " ======== \n\n";
 			iteration ++;
 			//shallow copy (!) the interface
-			copyInterferenceMap = new HashMap<HierarchyDependency, Map<Statement, Abstract1>>(interferenceDependencyAbsEnvMap);
+			copyInterferenceMap = new HashMap<HierarchyDependency, Map<Statement, Abstract1>>(interferencePGDependencyAbsEnvMap);
 			for (HierarchyDependency dependency : hierarchyOrder.getDependencies()) {
 				
-				Abstract1 i = joinInterface(dependency, copyInterferenceMap);
+				Abstract1 i = getInterferenceInPG(dependency, copyInterferenceMap);
 				SequAbstractInterpreter seqAI = new SequAbstractInterpreter(dependency, man, env, i);
  				seqAI.runAnalysis();
 				resultsDependencyAbsEnvMap.put(dependency, seqAI.getDeepcopyAbstractEnvMap());
 				fullLog += seqAI.getOutputString(); 
 				//initialize Interface
-				if (interferenceDependencyAbsEnvMap.get(dependency) == null) {
-					interferenceDependencyAbsEnvMap.put(dependency, seqAI.getInterfaceOut());
+				if (interferencePGDependencyAbsEnvMap.get(dependency) == null) {
+					interferencePGDependencyAbsEnvMap.put(dependency, seqAI.getInterfaceOut());
 				} else {
-					interferenceDependencyAbsEnvMap.put(dependency, Util.joinInterface(man, interferenceDependencyAbsEnvMap.get(dependency), seqAI.getInterfaceOut()));
+					wideningCounter++;
+					boolean widen = false;
+					if (wideningCounter > 5) {
+						widen = true;
+						wideningCounter = 0;
+					}
+					interferencePGDependencyAbsEnvMap.put(dependency, Util.joinInterferenceOrWidening(man, interferencePGDependencyAbsEnvMap.get(dependency), seqAI.getInterfaceOut(), widen));
 				}
 			}	
-		} while (!Util.equalsInterface(man, interferenceDependencyAbsEnvMap, copyInterferenceMap));
+		} while (!Util.equalsInterface(man, interferencePGDependencyAbsEnvMap, copyInterferenceMap));
 	}
 
-	
 	public String getFullLog() {
 		return fullLog;
 	}
 	
-	private Abstract1 joinInterface(HierarchyDependency currentDependency, Map<HierarchyDependency, Map<Statement, Abstract1>> interfaceMap) throws ApronException {
+	private Abstract1 getInterferenceInPG(HierarchyDependency currentDependency, Map<HierarchyDependency, Map<Statement, Abstract1>> interfaceMap) throws ApronException {
 		Abstract1 absOut = new Abstract1(man, env, true);
 		for (HierarchyDependency d : hierarchyOrder.getDependencies()) {
-			if (d != currentDependency) {
+			if (d.getInferior() != currentDependency.getInferior()) {
 				if (interfaceMap.get(d) != null) {
 					for (Statement s : interfaceMap.get(d).keySet()) {
 						absOut.join(man, interfaceMap.get(d).get(s));
@@ -104,8 +149,8 @@ public class ModAbstractInterpreter {
 	@Override
 	public String toString() {
 		String out = "\n\n\n#################  Final interferende  ###############";
-		for(HierarchyDependency d : interferenceDependencyAbsEnvMap.keySet()) {
-			out += Util.printAbstMap(d.getInferiorName(), interferenceDependencyAbsEnvMap.get(d), env, man);
+		for(HierarchyDependency d : interferencePGDependencyAbsEnvMap.keySet()) {
+			out += Util.printAbstMap(d.getInferiorName(), interferencePGDependencyAbsEnvMap.get(d), env, man);
 		}
 		out += "\n\n\n#################  Final abstract values  ###############";
 		for(HierarchyDependency d : resultsDependencyAbsEnvMap.keySet()) {

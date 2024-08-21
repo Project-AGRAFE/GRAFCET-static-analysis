@@ -56,7 +56,7 @@ public class TransferFunction {
 	 * returns abstract value after a corresponding vertex with an associated action is executed, null otherwise
 	 * @return
 	 */
-	public Abstract1 getInterfaceEntry() {
+	public Abstract1 getInterferenceOutN() {
 		return interfaceEntry;
 	}
 
@@ -113,8 +113,8 @@ public class TransferFunction {
 			abstractA.meet(man, abstractB);
 			out = abstractValueN.meetCopy(man, abstractA); //final meet mit Wert muss nicht rekursiv ausgeführt werden.
 		}else if (term instanceof Or) {
-			Abstract1 abstractA = recusiveAbstrsactFromTermBuilder(((And) term).getSubterm().get(0), abstractValueN, man, env);
-			Abstract1 abstractB = recusiveAbstrsactFromTermBuilder(((And) term).getSubterm().get(1), abstractValueN, man, env);
+			Abstract1 abstractA = recusiveAbstrsactFromTermBuilder(((Or) term).getSubterm().get(0), abstractValueN, man, env);
+			Abstract1 abstractB = recusiveAbstrsactFromTermBuilder(((Or) term).getSubterm().get(1), abstractValueN, man, env);
 			abstractA.join(man, abstractB);
 			out = abstractValueN.meetCopy(man, abstractA);
 			
@@ -124,11 +124,28 @@ public class TransferFunction {
 				Variable var = (Variable) notTerm.getSubterm().get(0);
 				out = abstractValueN.meetCopy(man, abstractEnvFromVariableExpr(var, abstractValueN, true, man, env));
 			} else {
-				throw new IllegalArgumentException("NOT-term is only allowed on Boolean variables");
+				//TODO unsound implementation, do not use!
+				//throw new IllegalArgumentException("NOT-term is only allowed on Boolean variables");
+				out = abstractValueN.meetCopy(man, new Abstract1(man, env));
 			}
 		}else if (term instanceof RisingEdge) {
-			//TODO
-			throw new NotImplementedException();
+			//TODO test pls
+			if (!(((RisingEdge) term).getSubterm().get(0) instanceof VariableDeclaration)){
+				out = abstractValueN.meetCopy(man, new Abstract1(man, env)); 
+				//TODO nicht wirklich implementiert
+				//throw new IllegalArgumentException("RinsingEdge-term is only allowed on boolean variables");
+			} else {
+				RisingEdge rETerm = (RisingEdge) term; 
+				Variable var = (Variable) rETerm.getSubterm().get(0);
+				Abstract1 varPos = abstractValueN.meetCopy(man, abstractEnvFromVariableExpr(var, abstractValueN, false, man, env));
+				Abstract1 varNeg = abstractValueN.meetCopy(man, abstractEnvFromVariableExpr(var, abstractValueN, true, man, env));
+				
+				if (!varPos.isBottom(man) && !varNeg.isBottom(man)) {
+					out = varPos;
+				} else {
+					out = abstractValueN.meetCopy(man, new Abstract1(man, env, true));
+				}
+			}
 		}else if (term instanceof FallingEdge) {
 			//TODO
 			throw new NotImplementedException();
@@ -156,7 +173,7 @@ public class TransferFunction {
 		return out;
 	}
 	
-	private Abstract1 abstractEnvFromVariableExpr(Variable var, Abstract1 abstractEnv, boolean isNegated, Manager man, Environment env) throws ApronException {
+	private Abstract1 abstractEnvFromVariableExpr(Variable var, Abstract1 abstractValueN, boolean isNegated, Manager man, Environment env) throws ApronException {
 		Abstract1 out;
 		int val = 1;
 		if (isNegated) val = 0;
@@ -170,9 +187,11 @@ public class TransferFunction {
 						new Texpr1CstNode(new MpqScalar(val)));
 				Texpr1Intern subTxprInt = new Texpr1Intern(env, subTxprNode);
 				Tcons1 expr = new Tcons1(Tcons1.EQ, subTxprInt);
-				out = abstractEnv.meetCopy(man, expr);
+				out = abstractValueN.meetCopy(man, expr);
 			} else if ((var).getVariableDeclaration().getVariableDeclarationType().equals(VariableDeclarationType.STEP)) {
-				throw new NotImplementedException();
+				//TODO: Überapproximation!
+				out = abstractValueN.meetCopy(man, new Abstract1(man, env)); 
+				//throw new NotImplementedException();
 			} else {
 				throw new IllegalArgumentException("Variable of type " + (var).getVariableDeclaration().getVariableDeclarationType() + " not expected.");
 			}
@@ -189,7 +208,8 @@ public class TransferFunction {
 				StoredAction storedAction = (StoredAction) actionType;
 				if (storedAction.getStoredActionType().getValue() == StoredActionType.ACTIVATION_VALUE ||
 						//stored Action by deactivation handled by transformation
-						storedAction.getStoredActionType().getValue() == StoredActionType.DEACTIVATION_VALUE) {
+						storedAction.getStoredActionType().getValue() == StoredActionType.DEACTIVATION_VALUE ||
+						storedAction.getStoredActionType().getValue() == StoredActionType.EVENT_VALUE) { //TODO: Diese Zeile ist wieder zu entfernen
 					Term value = storedAction.getValue();
 					if (storedAction.getVariable().getVariableDeclaration().getSort() instanceof Bool) {
 						Texpr1Node texprNode;
@@ -211,27 +231,9 @@ public class TransferFunction {
 								storedAction.getVariable().getVariableDeclaration().getName(),
 								texprIntern, null);
 					}
-				}else if(storedAction.getStoredActionType().getValue() == StoredActionType.EVENT_VALUE) {
-					if (storedAction.getVariable().getVariableDeclaration().getSort() instanceof Bool) {
-						
-					}else {
-						
-					}
 					
-					//abstrakten Wert für Bedingung berechnen
-					//meet mit Wert für 1 Hilfsschritt s1'
-					//abstrakten Wert für s1' berechnen
-					
-					//abstrakten Wert für S1 berechnen (join mit t1)
-					//join abs s1' und abs s1
-					//return
-					
-					//Es ist zu beachten, dass Transition ta keinen Einfluss hat, da danach join ausgeführt wird
-					
-					//Also:
-					//"aktueller Wert join anwendung der Aktion"
-					
-					throw new NotImplementedException(); //Es ist wohl unwarscheinlich, dass in der Bedingung interne Variablen auftauchen
+				//} else if (storedAction.getStoredActionType().getValue() == StoredActionType.EVENT_VALUE) { 
+				//	new NotImplementedException(); //Es ist wohl unwarscheinlich, dass in der Bedingung interne Variablen auftauchen
 					
 				}else {
 					throw new IllegalArgumentException("Unexpected value: " + storedAction.getStoredActionType());

@@ -106,7 +106,7 @@ public class SequAbstractInterpreter {
 //			Abstract1 e = TransferFunction.transfer(statement, abstractEnvMap.get(statement), man, env);
 			Abstract1 e = trans.transferInterface();
 			//TODO hier irgendow prüfen, ob bei Transition alle pre-steps erreichbar sind
-			setInterfaceOut(trans.getInterfaceEntry(), statement);
+			setInterfaceOut(trans.getInterferenceOutN(), statement);
 			for (Statement downstream : getDownstream(statement, subgraf)) {
 				if (!e.isIncluded(man, abstractEnvMap.get(downstream))) {
 					if(statement.getVisited() > 5) {

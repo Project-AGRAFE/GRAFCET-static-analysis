@@ -40,13 +40,18 @@ public class Util {
 		return copyAbstractEnvMap;		
 	}
 	
-	public static Map<Statement, Abstract1> joinInterface(Manager man, 
-			Map<Statement, Abstract1> abstInterface, Map<Statement, Abstract1> newInterface) throws ApronException{
+	public static Map<Statement, Abstract1> joinInterferenceOrWidening(Manager man, 
+			Map<Statement, Abstract1> abstInterface, Map<Statement, Abstract1> newInterface, 
+			boolean widen) throws ApronException{
 		Map<Statement, Abstract1> abstInterfaceOut = new HashMap<Statement, Abstract1>();
 		Set<Statement> visitedStatements = new HashSet<Statement>();
 		for (Statement s : abstInterface.keySet()) {
 			if (newInterface.containsKey(s)) {
-				abstInterfaceOut.put(s, abstInterface.get(s).joinCopy(man, newInterface.get(s)));
+				Abstract1 newJoin = abstInterface.get(s).joinCopy(man, newInterface.get(s));
+				if (widen) {
+					newJoin = abstInterface.get(s).widening(man, newInterface.get(s));
+				}
+				abstInterfaceOut.put(s, newJoin);
 				visitedStatements.add(s);
 			}
 		}
@@ -155,7 +160,8 @@ public class Util {
 		String out = "";
 		int end = Math.min(start + n, obj.length);
 		for (int i = start; i < end; i++) {
-			out += obj[i] + "\t";
+		//	out += obj[i] + "\t";
+			out += String.format("%12s", obj[i]);
 		}
 		return out;
 	}

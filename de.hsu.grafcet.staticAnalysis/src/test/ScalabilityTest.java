@@ -20,7 +20,7 @@ public class ScalabilityTest {
 	public static void testScalabilityBasicParallel() throws ApronException {	
 		doDummyStuff();
 		
-		for(int j = 20000; j <= 20000 ; j = j * 10) {
+		for(int j = 100; j <= 20000 ; j = j + 1) {
 			int m = 1;
 			int n = j;
 			long preStart = System.currentTimeMillis();

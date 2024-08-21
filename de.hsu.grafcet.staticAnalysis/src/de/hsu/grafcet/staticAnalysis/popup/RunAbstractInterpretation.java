@@ -86,12 +86,12 @@ public class RunAbstractInterpretation implements IObjectActionDelegate{
 								
 								
 								HierarchyOrder hierarchyOrder = new HierarchyOrder((Grafcet)res.getContents().get(0));
-                                String out1  = hierarchyOrder.analyzeReachabilityAndConcurrency();
+                                String out1  = hierarchyOrder.structuralAnalysis();
                                 Util.createOutputFile(out1 , target.getLocation().toString() + "/Result_Concurrency_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
                                 hierarchyOrder.runAbstractInterpretation();
                                 
-                                String out12 = hierarchyOrder.runConcurrentAbstractInterpretation();
-                                Util.createOutputFile(out12 , target.getLocation().toString() + "/Result_Concurrency_AI_TEST_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
+//                                String out12 = hierarchyOrder.runConcurrentAbstractInterpretation();
+//                                Util.createOutputFile(out12 , target.getLocation().toString() + "/Result_Concurrency_AI_TEST_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
                                 
                                 String out2 = hierarchyOrder.getAIResult();
                                 Util.createOutputFile(out2, target.getLocation().toString() + "/Result_AI_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt");
@@ -103,16 +103,16 @@ public class RunAbstractInterpretation implements IObjectActionDelegate{
                                 Detecter raceConditions = new RaceConditionDetecter(hierarchyOrder);
                                 Detecter transientRuns = new TransientRunDetecter(hierarchyOrder);
 
-                                transitions.runAnalysis();
-                                hierConflicts.runAnalysis();
-                                raceConditions.runAnalysis();
-                                transientRuns.runAnalysis();
-//
-                                String out4 = transitions.getResults();
-                                out4 += hierConflicts.getResults();
-                                out4 += raceConditions.getResults();
-                                out4 += transientRuns.getResults();                                                                
-                                Util.createOutputFile(out4, target.getLocation().toString() + "/Result_AI_veri_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt"); 
+//                                transitions.runAnalysis();	//TODO: Timeouted
+//                                hierConflicts.runAnalysis();
+//                                raceConditions.runAnalysis();
+//                                transientRuns.runAnalysis();
+////
+//                                String out4 = transitions.getResults();
+//                                out4 += hierConflicts.getResults();
+//                                out4 += raceConditions.getResults();
+//                                out4 += transientRuns.getResults();                                                                
+//                                Util.createOutputFile(out4, target.getLocation().toString() + "/Result_AI_veri_" + model.getName().substring(0, model.getName().lastIndexOf(".grafcet")) + ".txt"); 
 								
 							} catch (ApronException e){
 								//TODO unschöne Implementierung, mit dem Error, da es nur in der einen Date ist. Müsste in allen anderen auch sein --> Methode auslagern
