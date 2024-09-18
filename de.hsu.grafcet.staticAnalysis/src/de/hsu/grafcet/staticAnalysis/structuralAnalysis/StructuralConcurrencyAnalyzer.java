@@ -1,7 +1,9 @@
 package de.hsu.grafcet.staticAnalysis.structuralAnalysis;
 
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 
 import de.hsu.grafcet.staticAnalysis.hierarchyOrder.*;
@@ -97,6 +99,7 @@ public class StructuralConcurrencyAnalyzer {
 		Subgraf subgraf = dependency.getInferior();
 		while (!worklist.isEmpty()) {
 			Edge edge = worklist.pollFirst(); //.pollFirst() entspricht Breitensuche, .pollLast() Tiefensuche. pollFirst() scheint schneller zu sein
+			Map<Vertex, Set<Vertex>> copyConcurrentVertexVerticesMap = deepcopyConcurrentVerticesMap(dependency.getConcurrentVerticeVerticesMap());
 			if (isEnabled(edge, subgraf.getSourceEdges(), dependency.getReachableVertices())) {									
 				for(Vertex downstreamVertex : edge.getDownstream()) {	
 					//reachable annotation:
@@ -107,9 +110,23 @@ public class StructuralConcurrencyAnalyzer {
 					if (analyzeConcurrentSteps) {
 						annotateConcurrentVertices(dependency, downstreamVertex, edge);  //TODO: muss das erneut mit Liveness ausgef�hrt werden? Reicht es nicht dass bei jedem erreichbaren Schritt zu machen?
 					}
+					for (Vertex concurrentVertex : dependency.getConcurrentVerticeVerticesMap().get(downstreamVertex)) {
+						if (!copyConcurrentVertexVerticesMap.get(concurrentVertex).containsAll(dependency.getConcurrentVerticeVerticesMap().get(concurrentVertex))){
+							worklist.addAll(subgraf.getDownstreamEdges(concurrentVertex));
+						}
+					}
 				}
 			}
 		}
+	}
+	
+	private static Map<Vertex, Set<Vertex>> deepcopyConcurrentVerticesMap(Map<Vertex, Set<Vertex>> concurrentVertexVerticesMap){
+		Map<Vertex, Set<Vertex>> copyConcurrentVertexVerticesMap = new LinkedHashMap<Vertex, Set<Vertex>>();
+		for (Vertex v : concurrentVertexVerticesMap.keySet()) {
+			copyConcurrentVertexVerticesMap.put(v,
+					new LinkedHashSet<Vertex>(concurrentVertexVerticesMap.get(v)));
+		}
+		return copyConcurrentVertexVerticesMap;
 	}
 	
 	private static void annotateConcurrentVertices(HierarchyDependency dependency, Vertex downstreamVertex, Edge edge) {	

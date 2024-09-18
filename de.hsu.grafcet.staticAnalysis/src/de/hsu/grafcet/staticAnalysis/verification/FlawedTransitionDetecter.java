@@ -76,6 +76,7 @@ public class FlawedTransitionDetecter extends Detecter{
 				}
 			}
 			//detect possible deadlock or livelocks due to internal variables
+			/*
 			for (Vertex vertex : dependency.getInferior().getVertices()) {
 				List<Edge> downstreamEdges = new ArrayList<Edge>(dependency.getInferior().getDownstreamEdges(vertex));
 				if(downstreamEdges.size() > 0) {
@@ -91,7 +92,7 @@ public class FlawedTransitionDetecter extends Detecter{
 						result += "\nWARNING: Downstream transition(s) after step " + vertex.getId() + " do(es) not cover the internal variable values";
 					}
 				}
-			}
+			}*/
 		}
 	}
 

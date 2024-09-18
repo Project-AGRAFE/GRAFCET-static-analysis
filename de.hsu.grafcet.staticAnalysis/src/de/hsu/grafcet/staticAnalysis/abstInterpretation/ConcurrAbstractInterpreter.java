@@ -40,6 +40,8 @@ public class ConcurrAbstractInterpreter {
 	
 	Abstract1 interferenceInPG;
 	
+	int wideningThreshold = 10;
+	
 
 	public ConcurrAbstractInterpreter(HierarchyDependency dependency, Environment env) throws ApronException {
 		this.dependency = dependency;
@@ -65,6 +67,7 @@ public class ConcurrAbstractInterpreter {
 			Abstract1 interferenceInStep = new Abstract1(man, env, true);
 			if (n instanceof Vertex) {
 				interferenceInStep = calculateInterferenceInStep((Vertex)n);
+				joinOrWidening(n, interferenceInStep);			//note: added 20241009
 				TransferFunction transferTemp = new TransferFunction(n, abstractEnvMap.get(n), man, env, 
 						interferenceInStep.joinCopy(man, interferenceInPG));
 				transferTemp.transferInterface();
@@ -133,7 +136,7 @@ public class ConcurrAbstractInterpreter {
 	 * @throws ApronException
 	 */
 	private void joinOrWidening(Statement n, Abstract1 e) throws ApronException {
-		if(n.getVisited() > 5) {
+		if(n.getVisited() > wideningThreshold && !e.isBottom(man)) {
 			abstractEnvMap.get(n).join(man, abstractEnvMap.get(n).widening(man, e));
 			//reset other widening-counters to make analysis more precise:
 			for (Statement s : statements) {
